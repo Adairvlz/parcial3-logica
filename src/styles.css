@@ -2274,3 +2274,8 @@ code {
 .universal .node-formula {
   font-size: var(--label-size, 16px);
 }
+
+.demo-workspace {
+  position: absolute;
+  inset: 0;
+}

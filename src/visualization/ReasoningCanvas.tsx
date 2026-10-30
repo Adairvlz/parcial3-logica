@@ -629,8 +629,8 @@ function OrganicScene({
           <span className="empty-symbol">φ</span>
           <h2>Un nuevo razonamiento espera.</h2>
           <p>
-            Tu fórmula está sin evaluar. Restaura el ejemplo para explorar el
-            árbol DEMO.
+            Abre Evaluar para calcular tu fórmula con una interpretación, o
+            restaura el ejemplo para explorar el árbol DEMO.
           </p>
           <span className="demo-label">MOTOR SEMÁNTICO · FASE 2</span>
         </div>

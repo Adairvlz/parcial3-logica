@@ -1,6 +1,6 @@
 # Roadmap
 
-Fases implementadas: 1 y **1.5 — Visual Revolution**. La fase 2 no se ha iniciado.
+Fases implementadas: 1, 1.5 y **2 — Motor semántico real**. La fase 3 no se ha iniciado.
 
 | Fase                               | Objetivo                                                                        | Dependencia                   | Aceptación                                                                                                 |
 | ---------------------------------- | ------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -14,7 +14,7 @@ Fases implementadas: 1 y **1.5 — Visual Revolution**. La fase 2 no se ha inici
 
 La reproducción, la cámara y la propagación visual ya existen para un fixture de siete nodos. En fase 3 se alimentarán desde trazas reales; en fase 4 se extenderán a secuencias arbitrarias, agrupación, contracción y escalabilidad. El escenario sintético de 40 nodos es una prueba de visualización, no un evaluador ni una prueba de fórmulas mayores.
 
-## Plan concreto de fase 2
+## Alcance de fase 2 implementado
 
 1. Definir gramática, precedencia y asociatividad de ¬, ∧, ∨, →, ↔ y cuantificadores. Acordar igualdad y alias ASCII antes de incluirlos; no asumir símbolos adicionales a la consigna.
 2. Crear tokens con posiciones y AST discriminado para términos, átomos, conectivos y cuantificadores. Reportar errores con rangos y mensajes en español.
@@ -26,3 +26,9 @@ La reproducción, la cámara y la propagación visual ya existen para un fixture
 8. Exponer un resultado estructurado con procedencia real y errores. Conectar un flujo mínimo de evaluación a la UI; la generación completa de árboles arbitrarios y su layout corresponde a fase 3.
 
 Criterio de salida: resultados reproducibles, todas las validaciones obligatorias cubiertas y ninguna lógica matemática ad hoc dentro de componentes React. No retirar la etiqueta DEMO de una traza hasta que provenga efectivamente del motor.
+
+Decisiones adoptadas: no incluir igualdad ni alias ASCII; cuantificadores de alcance amplio hasta el cierre de paréntesis; implicación asociativa a la derecha; relaciones no vacías también para aridad cero; límites operativos explícitos sin resultados parciales. Gramática y ejemplos en `SEMANTICS.md`.
+
+## Próxima fase: 3 — Reasoning Tree Engine
+
+Convertir AST y evidencia en nodos visuales con identidad estable, dependencias y layout arbitrario. Integrar fórmulas reales al árbol orgánico sin modificar la semántica del motor. Distinguir evaluación abreviada de exploración exhaustiva, mostrar testigos y contraejemplos, y producir eventos aptos para el reloj existente. Mantener la DEMO disponible como ejemplo independiente hasta validar esta integración.

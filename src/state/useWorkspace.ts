@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { DEMO_FORMULA } from "../features/demo/scenario";
-export type Page = "dashboard" | "laboratory" | "editor";
+export type Page = "dashboard" | "laboratory" | "editor" | "evaluate";
 const pageFromHash = (): Page => {
   const value = window.location.hash.slice(2);
-  return value === "dashboard" || value === "editor" ? value : "laboratory";
+  return value === "dashboard" || value === "editor" || value === "evaluate"
+    ? value
+    : "laboratory";
 };
 export function useWorkspace() {
   const [page, setPage] = useState<Page>(pageFromHash);

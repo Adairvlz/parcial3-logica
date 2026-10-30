@@ -26,6 +26,7 @@ import { Inspector } from "./features/laboratory/Inspector";
 import { Timeline } from "./features/laboratory/Timeline";
 import { ReasoningCanvas } from "./visualization/ReasoningCanvas";
 import { Modal } from "./ui/Modal";
+import { SemanticWorkspace } from "./features/evaluation/SemanticWorkspace";
 
 export function App() {
   const ws = useWorkspace();
@@ -48,6 +49,7 @@ export function App() {
   useEffect(() => {
     setEditor(ws.page === "editor");
     setMenu(false);
+    if (ws.page === "evaluate") p.pause();
   }, [ws.page]);
   useEffect(() => {
     if (!ws.isDemo) {
@@ -114,9 +116,19 @@ export function App() {
               <span>Laboratorio</span>
               <ChevronRight size={12} />
               <strong>Living Reasoning Tree</strong>
-              <span className="phase-label">1.5</span>
+              <span className="phase-label">2.0</span>
             </div>
             <div className="header-actions">
+              <button
+                className="semantic-entry"
+                onClick={() => {
+                  p.pause();
+                  ws.navigate("evaluate");
+                }}
+              >
+                <FlaskConical size={14} />
+                <span>Evaluar</span>
+              </button>
               <button onClick={() => setDialog("examples")}>
                 <BookOpen size={14} />
                 <span>Ejemplos</span>
@@ -165,284 +177,296 @@ export function App() {
             >
               <Braces size={19} />
             </a>
-            <button
-              aria-label="Experiments · próximamente"
-              title="Experiments · próximamente"
-              disabled
+            <a
+              href="#/evaluate"
+              aria-label="Evaluador semántico"
+              title="Evaluador semántico"
+              className={ws.page === "evaluate" ? "active" : ""}
+              onClick={() => p.pause()}
             >
               <FlaskConical size={18} />
-            </button>
+            </a>
             <span className="rail-spacer" />
             <span className="rail-monogram">λ</span>
-            <span className="rail-version">01.5</span>
+            <span className="rail-version">02.0</span>
           </nav>
         </>
       )}
       <main id="main-content" tabIndex={-1} className="living-stage">
-        <ReasoningCanvas
-          selectedId={ws.selectedId}
-          onSelect={select}
-          active={ws.isDemo}
-          frame={frame}
-          reduced={motion.reduced}
-          follow={follow}
-          setFollow={setFollow}
-          synthetic={synthetic}
-          request={viewRequest}
-          playing={p.playing}
+        <SemanticWorkspace
+          formula={ws.formula}
+          onChange={changeFormula}
+          onClose={() => ws.navigate("laboratory")}
+          visible={ws.page === "evaluate"}
         />
-        <div className="scene-caption">
-          <div className="eyebrow">
-            <span className="live-dot" />
-            {synthetic ? "VISUAL STRESS TEST" : "ORGANIC LUMINOUS REASONING"}
-          </div>
-          <h1>
-            {synthetic
-              ? "40 nodos. Sin evaluación."
-              : "El razonamiento cobra vida."}
-          </h1>
-          <p>
-            {synthetic
-              ? "Estructura sintética · prueba de layout"
-              : "Un universo finito. Infinitas formas de comprender."}
-          </p>
-        </div>
-        <div className="formula-dock glass">
-          <button
-            className="active-formula"
-            aria-label="Editar fórmula"
-            onClick={() => setEditor(!editor)}
-          >
-            <Braces size={15} />
-            <span>{ws.formula || "Escribe una fórmula"}</span>
-            <span className="edit-hint">EDITAR</span>
-          </button>
-          <span className="demo-label">
-            {ws.isDemo ? "DEMO" : "SIN EVALUAR"}
-          </span>
-          <button
-            className="evaluate-button"
-            disabled={!ws.isDemo || synthetic}
-            aria-label="Animar demo"
-            onClick={playDemo}
-          >
-            <Play size={12} fill="currentColor" />
-            <span>Animar</span>
-          </button>
-        </div>
-        <div className="scene-actions">
-          <button
-            className={`glass ${inspector ? "active" : ""}`}
-            aria-label={inspector ? "Ocultar inspector" : "Mostrar inspector"}
-            title="Inspector"
-            disabled={synthetic}
-            onClick={() => setInspector(!inspector)}
-          >
-            <PanelRight size={17} />
-          </button>
-          <button
-            className={`glass ${settings ? "active" : ""}`}
-            aria-label="Configuración visual"
-            title="Configuración visual"
-            onClick={() => setSettings(!settings)}
-          >
-            <Settings2 size={17} />
-          </button>
-          <button
-            className="glass"
-            aria-label={
-              immersive ? "Salir del modo inmersivo" : "Modo inmersivo"
-            }
-            title={immersive ? "Salir del modo inmersivo" : "Modo inmersivo"}
-            onClick={() => setImmersive(!immersive)}
-          >
-            {immersive ? <Shrink size={17} /> : <Expand size={17} />}
-          </button>
-        </div>
-        {editor && (
-          <div className="editor-popover glass">
-            <div className="panel-heading">
-              <span>FORMULA EDITOR</span>
-              <button
-                aria-label="Cerrar editor"
-                onClick={() => setEditor(false)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <FormulaEditor
-              formula={ws.formula}
-              onChange={changeFormula}
-              isDemo={ws.isDemo}
-              onReset={reset}
-            />
-          </div>
-        )}
-        {inspector && !synthetic && (
-          <Inspector
-            selectedId={ws.selectedId || "root"}
-            active={ws.isDemo}
+        <div className="demo-workspace" hidden={ws.page === "evaluate"}>
+          <ReasoningCanvas
+            selectedId={ws.selectedId}
             onSelect={select}
+            active={ws.isDemo}
             frame={frame}
-            onClose={() => setInspector(false)}
+            reduced={motion.reduced}
+            follow={follow}
+            setFollow={setFollow}
+            synthetic={synthetic}
+            request={viewRequest}
+            playing={p.playing}
           />
-        )}
-        {settings && (
-          <section
-            className="visual-settings glass"
-            aria-label="Configuración visual"
-          >
-            <div className="panel-heading">
-              <span>VISUAL EXPERIENCE</span>
+          <div className="scene-caption">
+            <div className="eyebrow">
+              <span className="live-dot" />
+              {synthetic ? "VISUAL STRESS TEST" : "ORGANIC LUMINOUS REASONING"}
+            </div>
+            <h1>
+              {synthetic
+                ? "40 nodos. Sin evaluación."
+                : "El razonamiento cobra vida."}
+            </h1>
+            <p>
+              {synthetic
+                ? "Estructura sintética · prueba de layout"
+                : "Un universo finito. Infinitas formas de comprender."}
+            </p>
+          </div>
+          <div className="formula-dock glass">
+            <button
+              className="active-formula"
+              aria-label="Editar fórmula"
+              onClick={() => setEditor(!editor)}
+            >
+              <Braces size={15} />
+              <span>{ws.formula || "Escribe una fórmula"}</span>
+              <span className="edit-hint">EDITAR</span>
+            </button>
+            <span className="demo-label">
+              {ws.isDemo ? "DEMO" : "SIN EVALUAR"}
+            </span>
+            <button
+              className="evaluate-button"
+              disabled={!ws.isDemo || synthetic}
+              aria-label="Animar demo"
+              onClick={playDemo}
+            >
+              <Play size={12} fill="currentColor" />
+              <span>Animar</span>
+            </button>
+          </div>
+          <div className="scene-actions">
+            <button
+              className={`glass ${inspector ? "active" : ""}`}
+              aria-label={inspector ? "Ocultar inspector" : "Mostrar inspector"}
+              title="Inspector"
+              disabled={synthetic}
+              onClick={() => setInspector(!inspector)}
+            >
+              <PanelRight size={17} />
+            </button>
+            <button
+              className={`glass ${settings ? "active" : ""}`}
+              aria-label="Configuración visual"
+              title="Configuración visual"
+              onClick={() => setSettings(!settings)}
+            >
+              <Settings2 size={17} />
+            </button>
+            <button
+              className="glass"
+              aria-label={
+                immersive ? "Salir del modo inmersivo" : "Modo inmersivo"
+              }
+              title={immersive ? "Salir del modo inmersivo" : "Modo inmersivo"}
+              onClick={() => setImmersive(!immersive)}
+            >
+              {immersive ? <Shrink size={17} /> : <Expand size={17} />}
+            </button>
+          </div>
+          {editor && (
+            <div className="editor-popover glass">
+              <div className="panel-heading">
+                <span>FORMULA EDITOR</span>
+                <button
+                  aria-label="Cerrar editor"
+                  onClick={() => setEditor(false)}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <FormulaEditor
+                formula={ws.formula}
+                onChange={changeFormula}
+                isDemo={ws.isDemo}
+                onReset={reset}
+              />
+            </div>
+          )}
+          {inspector && !synthetic && (
+            <Inspector
+              selectedId={ws.selectedId || "root"}
+              active={ws.isDemo}
+              onSelect={select}
+              frame={frame}
+              onClose={() => setInspector(false)}
+            />
+          )}
+          {settings && (
+            <section
+              className="visual-settings glass"
+              aria-label="Configuración visual"
+            >
+              <div className="panel-heading">
+                <span>VISUAL EXPERIENCE</span>
+                <button
+                  aria-label="Cerrar configuración"
+                  onClick={() => setSettings(false)}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <label className="setting-row">
+                <span>
+                  Seguir el razonamiento
+                  <small>Se desactiva al mover la cámara.</small>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={follow}
+                  onChange={(e) => setFollow(e.target.checked)}
+                />
+              </label>
+              <label className="setting-row">
+                <span>
+                  Reducir movimiento
+                  <small>
+                    {motion.system
+                      ? "Activado por tu sistema."
+                      : "Sin pulsos ni transiciones de cámara."}
+                  </small>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={motion.reduced}
+                  disabled={motion.system}
+                  onChange={(e) => motion.setDisabled(e.target.checked)}
+                />
+              </label>
+              <label className="glow-setting">
+                Intensidad luminosa
+                <input
+                  type="range"
+                  aria-label="Intensidad luminosa"
+                  min={0.3}
+                  max={1.4}
+                  step={0.1}
+                  value={glow}
+                  onChange={(e) => setGlow(Number(e.target.value))}
+                />
+              </label>
+              <div className="settings-divider" />
+              <span className="eyebrow">LABORATORIO VISUAL</span>
+              <p>
+                Prueba el espacio con 40 nodos sintéticos. Sin resultados
+                matemáticos.
+              </p>
               <button
-                aria-label="Cerrar configuración"
-                onClick={() => setSettings(false)}
+                className="secondary-button"
+                disabled={!ws.isDemo}
+                onClick={() => {
+                  p.pause();
+                  if (synthetic) reset();
+                  else setSynthetic(true);
+                  ws.selectNode("");
+                  setInspector(false);
+                  setFollow(false);
+                  setSettings(false);
+                  setViewRequest((n) => n + 1);
+                }}
               >
-                <X size={16} />
+                {synthetic
+                  ? "Volver al ejemplo de 7 nodos"
+                  : "Probar 40 nodos sintéticos"}
+                <ArrowUpRight size={13} />
+              </button>
+            </section>
+          )}
+          {ws.page === "dashboard" && <Dashboard openDemo={openDemo} />}
+          <div className="universe-note">
+            <span className="eyebrow">
+              {synthetic ? "SYNTHETIC / 40" : "UNIVERSO / 03"}
+            </span>
+            {!synthetic && (
+              <>
+                <code>D = {"{a, b, c}"}</code>
+                <span>P = {"{(a,b), (b,c), (c,a)}"}</span>
+              </>
+            )}
+            <div className="node-key">
+              <span>
+                <i className="key-universal" />∀ universal
+              </span>
+              <span>
+                <i className="key-existential" />∃ existencial
+              </span>
+              <span>
+                <i className="key-atom" />P predicado
+              </span>
+            </div>
+          </div>
+          <div
+            className={`result-beacon ${ws.isDemo && frame.result && !synthetic ? "resolved" : ""}`}
+            role="status"
+          >
+            <span className="beacon-icon">
+              {ws.isDemo && frame.result && !synthetic ? (
+                <Check size={17} />
+              ) : (
+                <span className="tiny-ring" />
+              )}
+            </span>
+            <div>
+              <span>
+                {synthetic
+                  ? "Prueba visual"
+                  : !ws.isDemo
+                    ? "Sin evaluar"
+                    : frame.result
+                      ? "Verdadero"
+                      : "Razonamiento en curso"}
+              </span>
+              <small>
+                {synthetic
+                  ? "Sin valor de verdad"
+                  : !ws.isDemo
+                    ? "Motor semántico · fase 2"
+                    : frame.result
+                      ? "3 de 3 casos · DEMO"
+                      : "Secuencia demostrativa"}
+              </small>
+            </div>
+          </div>
+          {!synthetic ? (
+            <Timeline playback={p} enabled={ws.isDemo} />
+          ) : (
+            <div className="synthetic-banner glass">
+              <span>40 nodos / 39 conexiones · Sin evaluación matemática</span>
+              <button
+                onClick={() => {
+                  reset();
+                }}
+              >
+                Volver al árbol DEMO
               </button>
             </div>
-            <label className="setting-row">
-              <span>
-                Seguir el razonamiento
-                <small>Se desactiva al mover la cámara.</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={follow}
-                onChange={(e) => setFollow(e.target.checked)}
-              />
-            </label>
-            <label className="setting-row">
-              <span>
-                Reducir movimiento
-                <small>
-                  {motion.system
-                    ? "Activado por tu sistema."
-                    : "Sin pulsos ni transiciones de cámara."}
-                </small>
-              </span>
-              <input
-                type="checkbox"
-                checked={motion.reduced}
-                disabled={motion.system}
-                onChange={(e) => motion.setDisabled(e.target.checked)}
-              />
-            </label>
-            <label className="glow-setting">
-              Intensidad luminosa
-              <input
-                type="range"
-                aria-label="Intensidad luminosa"
-                min={0.3}
-                max={1.4}
-                step={0.1}
-                value={glow}
-                onChange={(e) => setGlow(Number(e.target.value))}
-              />
-            </label>
-            <div className="settings-divider" />
-            <span className="eyebrow">LABORATORIO VISUAL</span>
-            <p>
-              Prueba el espacio con 40 nodos sintéticos. Sin resultados
-              matemáticos.
-            </p>
-            <button
-              className="secondary-button"
-              disabled={!ws.isDemo}
-              onClick={() => {
-                p.pause();
-                if (synthetic) reset();
-                else setSynthetic(true);
-                ws.selectNode("");
-                setInspector(false);
-                setFollow(false);
-                setSettings(false);
-                setViewRequest((n) => n + 1);
-              }}
-            >
-              {synthetic
-                ? "Volver al ejemplo de 7 nodos"
-                : "Probar 40 nodos sintéticos"}
-              <ArrowUpRight size={13} />
-            </button>
-          </section>
-        )}
-        {ws.page === "dashboard" && <Dashboard openDemo={openDemo} />}
-        <div className="universe-note">
-          <span className="eyebrow">
-            {synthetic ? "SYNTHETIC / 40" : "UNIVERSO / 03"}
-          </span>
-          {!synthetic && (
-            <>
-              <code>D = {"{a, b, c}"}</code>
-              <span>P = {"{(a,b), (b,c), (c,a)}"}</span>
-            </>
           )}
-          <div className="node-key">
+          <div className="scene-footer">
+            <span>MM3032 / LOGOS LAB</span>
             <span>
-              <i className="key-universal" />∀ universal
+              {motion.reduced
+                ? "MOVIMIENTO REDUCIDO"
+                : "ARRASTRA PARA EXPLORAR"}
+              <i /> {follow ? "CÁMARA AUTOMÁTICA" : "CÁMARA LIBRE"}
             </span>
-            <span>
-              <i className="key-existential" />∃ existencial
-            </span>
-            <span>
-              <i className="key-atom" />P predicado
-            </span>
+            <span>DEMO · FASE 1.5</span>
           </div>
-        </div>
-        <div
-          className={`result-beacon ${ws.isDemo && frame.result && !synthetic ? "resolved" : ""}`}
-          role="status"
-        >
-          <span className="beacon-icon">
-            {ws.isDemo && frame.result && !synthetic ? (
-              <Check size={17} />
-            ) : (
-              <span className="tiny-ring" />
-            )}
-          </span>
-          <div>
-            <span>
-              {synthetic
-                ? "Prueba visual"
-                : !ws.isDemo
-                  ? "Sin evaluar"
-                  : frame.result
-                    ? "Verdadero"
-                    : "Razonamiento en curso"}
-            </span>
-            <small>
-              {synthetic
-                ? "Sin valor de verdad"
-                : !ws.isDemo
-                  ? "Motor semántico · fase 2"
-                  : frame.result
-                    ? "3 de 3 casos · DEMO"
-                    : "Secuencia demostrativa"}
-            </small>
-          </div>
-        </div>
-        {!synthetic ? (
-          <Timeline playback={p} enabled={ws.isDemo} />
-        ) : (
-          <div className="synthetic-banner glass">
-            <span>40 nodos / 39 conexiones · Sin evaluación matemática</span>
-            <button
-              onClick={() => {
-                reset();
-              }}
-            >
-              Volver al árbol DEMO
-            </button>
-          </div>
-        )}
-        <div className="scene-footer">
-          <span>MM3032 / LOGOS LAB</span>
-          <span>
-            {motion.reduced ? "MOVIMIENTO REDUCIDO" : "ARRASTRA PARA EXPLORAR"}
-            <i /> {follow ? "CÁMARA AUTOMÁTICA" : "CÁMARA LIBRE"}
-          </span>
-          <span>DEMO · FASE 1.5</span>
         </div>
       </main>
       {menu && (
@@ -462,14 +486,21 @@ export function App() {
           <a href="#/editor" onClick={() => setMenu(false)}>
             Formula Editor <Braces size={15} />
           </a>
-          {["Language Builder", "Interpretation Studio", "Experiments"].map(
-            (name) => (
-              <button key={name} disabled>
-                {name}
-                <small>Próximamente</small>
-              </button>
-            ),
-          )}
+          <a
+            href="#/evaluate"
+            onClick={() => {
+              p.pause();
+              setMenu(false);
+            }}
+          >
+            Lenguaje y evaluación <FlaskConical size={15} />
+          </a>
+          {["Interpretation Studio", "Experiments"].map((name) => (
+            <button key={name} disabled>
+              {name}
+              <small>Próximamente</small>
+            </button>
+          ))}
         </div>
       )}
       {dialog && (

@@ -18,11 +18,13 @@ export function FormulaEditor({
   onChange,
   isDemo,
   onReset,
+  mode = "demo",
 }: {
   formula: string;
   onChange: (value: string) => void;
   isDemo: boolean;
   onReset: () => void;
+  mode?: "demo" | "semantic";
 }) {
   const input = useRef<HTMLTextAreaElement>(null);
   function insert(symbol: string) {
@@ -47,7 +49,11 @@ export function FormulaEditor({
           <Braces size={15} /> FÓRMULA ACTIVA
         </span>
         <Badge tone={isDemo ? "mint" : "amber"}>
-          {isDemo ? "Ejemplo demostrativo" : "Sin evaluar"}
+          {mode === "semantic"
+            ? "Motor semántico"
+            : isDemo
+              ? "Ejemplo demostrativo"
+              : "Sin evaluar"}
         </Badge>
       </div>
       <div className="formula-input">
@@ -86,9 +92,11 @@ export function FormulaEditor({
         </button>
       </div>
       <p className="editor-note">
-        {isDemo
-          ? "Vista de un ejemplo predefinido. Motor semántico en desarrollo."
-          : "Texto personalizado · el parser y la evaluación llegarán en la fase 2."}
+        {mode === "semantic"
+          ? "Se analiza y evalúa con el lenguaje y la interpretación de esta vista."
+          : isDemo
+            ? "Vista de un ejemplo predefinido. Abre Evaluar para usar el motor real."
+            : "Texto personalizado · abre Evaluar para analizarlo con tu interpretación."}
       </p>
     </section>
   );

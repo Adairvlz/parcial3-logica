@@ -47,3 +47,11 @@ Timeline inferior con ocho hitos, slider, reproducción, pausa, pasos, reinicio 
 Nodos seleccionables por Tab + Enter/Espacio, nombres accesibles para controles, inspector con estado temporal real, diálogo con foco confinado y Escape, enlace de salto al árbol. Movimiento reducido del sistema o control explícito elimina pulsos, escalas interpoladas, desplazamiento ambiental y transiciones de cámara sin cambiar el orden de resultados.
 
 En pantallas pequeñas, el árbol usa composición más estrecha, la timeline ocupa el ancho y los paneles tienen scroll interno. Se puede hacer zoom y centrar un nodo para leer; la vista global de 40 nodos es estructural, no de lectura de etiquetas. No se afirma auditoría formal de contraste ni pruebas con lectores de pantalla reales.
+
+## Vista de evaluación real · fase 2
+
+El acceso Evaluar abre una vista de trabajo diferenciada del canvas DEMO. Reutiliza la paleta oscura, la notación monoespaciada y la botonera de fórmulas; agrupa dominio, declaraciones y tablas en un formulario. La evidencia aparece a la derecha en escritorio y debajo en móvil. Al evaluar se encuadra el resultado o la sección de asignaciones pendientes.
+
+`MOTOR REAL` identifica un valor calculado. Verde significa verdadero, coral falso, y ámbar corresponde a entrada inválida o cálculo pendiente, sin valor de verdad. Las filas desplegables muestran V/F, fórmula y entorno; al abrirlas revelan la regla, los casos comprobados, sustituciones y razones decisivas. Cada edición elimina el resultado anterior. Los errores de fórmula permiten seleccionar su posición exacta en el editor.
+
+El modelo editable tiene su propio estado; no cambia la interpretación del ejemplo animado. Al volver se indica explícitamente Árbol DEMO. La edición gráfica avanzada de interpretaciones y la visualización de trazas arbitrarias siguen en fases posteriores.

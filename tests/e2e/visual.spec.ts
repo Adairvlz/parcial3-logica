@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-test.use({ video: { mode: process.env.LOGOS_RECORD_VIDEO === "1" ? "on" : "off", size: { width: 1366, height: 768 } } });
+test.use({
+  video: {
+    mode: process.env.LOGOS_RECORD_VIDEO === "1" ? "on" : "off",
+    size: { width: 1366, height: 768 },
+  },
+});
 test("visual review of organic scene, intermediate propagation and mobile", async ({
   page,
 }) => {
