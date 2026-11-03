@@ -1,6 +1,6 @@
 # Roadmap
 
-Fases implementadas: 1, 1.5 y **2 — Motor semántico real**. La fase 3 no se ha iniciado.
+Fases implementadas: 1, 1.5, 2, **3 — Reasoning Tree Engine** y la reproducción de la fase 4.
 
 | Fase                               | Objetivo                                                                        | Dependencia                   | Aceptación                                                                                                 |
 | ---------------------------------- | ------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ Fases implementadas: 1, 1.5 y **2 — Motor semántico real**. La fase 3 no se h
 | 5 · Interpretation Studio          | Edición gráfica de dominio, funciones y relaciones                              | Validadores y motor           | Ediciones válidas recalculan resultados; errores se explican en contexto                                   |
 | 6 · Final polish                   | Rendimiento, accesibilidad, exportación y presentación                          | Integración completa          | Pruebas exhaustivas y demostración académica verificable                                                   |
 
-La reproducción, la cámara y la propagación visual ya existen para un fixture de siete nodos. En fase 3 se alimentarán desde trazas reales; en fase 4 se extenderán a secuencias arbitrarias, agrupación, contracción y escalabilidad. `expandedLayout` y su fixture sintético de 40 nodos siguen en `organicLayout.ts`, cubiertos por pruebas de geometría, como base del layout de fase 3; ya no tienen entrada en la interfaz.
+La reproducción, la cámara y la propagación ya se compilan desde el árbol real de cada evaluación. Queda pendiente el editor gráfico de interpretaciones (fase 5) y el cierre (fase 6).
 
 ## Alcance de fase 2 implementado
 
@@ -29,6 +29,6 @@ Criterio de salida: resultados reproducibles, todas las validaciones obligatoria
 
 Decisiones adoptadas: igualdad entre términos y alias de teclado; cuantificadores que abarcan solo la fórmula inmediata, como en la notación del curso; implicación asociativa a la derecha; relaciones no vacías también para aridad cero; límites operativos explícitos sin resultados parciales. Gramática y ejemplos en `SEMANTICS.md`.
 
-## Próxima fase: 3 — Reasoning Tree Engine
+## Próxima fase: 5 — Interpretation Studio
 
-Convertir AST y evidencia en nodos visuales con identidad estable, dependencias y layout arbitrario. Integrar fórmulas reales al árbol orgánico sin modificar la semántica del motor. Distinguir evaluación abreviada de exploración exhaustiva, mostrar testigos y contraejemplos, y producir eventos aptos para el reloj existente. Mantener la DEMO disponible como ejemplo independiente hasta validar esta integración.
+Reemplazar las tablas de texto por edición gráfica de dominio, funciones y relaciones, en particular para las funciones, donde hoy hay que escribir todas las filas. Mantener `validateModel` como única fuente de validez.

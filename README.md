@@ -4,7 +4,7 @@
 
 Curso: MM3032 Lógica Matemática. Integrantes: Diego Quan y Adair Velásquez.
 
-Aplicación frontend para MM3032 — Lógica Matemática. La **fase 2 incluye un motor semántico real**, con parser, validación y evaluación determinista de fórmulas de primer orden sobre interpretaciones finitas. Se conserva el **Organic Luminous Reasoning Tree** de fase 1.5 como demostración animada independiente. La conexión de árboles arbitrarios al motor pertenece a fase 3.
+Aplicación frontend para MM3032 — Lógica Matemática. Evalúa fórmulas de primer orden sobre interpretaciones finitas con un motor determinista, y **dibuja y anima el razonamiento real de cada fórmula** en un árbol interactivo.
 
 ## Ejecutar
 
@@ -50,15 +50,16 @@ En **Evaluador**:
 
 En **Árbol**:
 
-- Explorar el ejemplo `∀x ∃y P(x,y)` con `D = {a,b,c}` y `P = {(a,b),(b,c),(c,a)}`.
-- Reproducir ocho pasos en 21,6 segundos: raíz, ramificación, tres testigos, propagación, conclusión y vista completa.
+- Ver el árbol de la última evaluación; la app abre con el ejemplo `∀x ∃y P(x,y)` ya evaluado. **Ver razonamiento en el árbol**, en el resultado, lo abre y lo reproduce.
+- Reproducir la evaluación paso a paso, en el orden del motor: cada nodo se resuelve después de sus hijos.
 - Pausar, reiniciar, avanzar, retroceder, arrastrar la línea de tiempo y cambiar velocidad (0,5× a 2×).
 - Ampliar, alejar, desplazar y ajustar el árbol. La cámara sigue la animación y cede ante el movimiento manual.
+- Ver el árbol completo de lo que evaluó el motor, con el testigo o contraejemplo resaltado. El botón `−` del nodo colapsa una rama y `+N` la vuelve a abrir.
 - Seleccionar nodos para destacar su ruta y consultar fórmula, entorno, regla y justificación.
 - Activar el modo inmersivo, que dedica toda la pantalla al árbol.
 - Usar teclado; se respeta la preferencia de movimiento reducido del sistema.
 
-El árbol animado y sus resultados se identifican como **DEMO**: por ahora muestra siempre el mismo ejemplo y no depende de lo que escribas en el Evaluador. **Animar** lo reconstruye desde la raíz; sus tiempos son de presentación, no de cómputo. El Evaluador rotula sus resultados como **MOTOR REAL**, y toda modificación de fórmula, modelo o asignaciones retira el resultado anterior. Los borradores se conservan al cambiar de pestaña y se reinician al recargar.
+Cada árbol corresponde a un resultado del motor: toda modificación de fórmula, modelo o asignaciones retira el resultado y su árbol. Los borradores se conservan al cambiar de pestaña y se reinician al recargar. Consulta qué se muestra de cada resultado en [SEMANTICS.md](SEMANTICS.md).
 
 No hay backend ni persistencia remota. Las fuentes de Google son opcionales: existen alternativas del sistema si no hay conexión.
 
@@ -77,4 +78,4 @@ Las funciones se introducen con filas como `(a) -> b`. Una constante c se declar
 
 El cuantificador abarca solo la fórmula inmediata, como en la notación del curso: `∀x P(x) → Q(x)` significa `(∀x P(x)) → Q(x)` y deja libre la segunda x. Usa `∀x (P(x) → Q(x))` para ligarla. La implicación se asocia a la derecha. Consulta la gramática y los límites en [SEMANTICS.md](SEMANTICS.md).
 
-Consulta [ARCHITECTURE.md](ARCHITECTURE.md), [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md), [ROADMAP.md](ROADMAP.md) y [PHASE_2_REPORT.md](PHASE_2_REPORT.md). Los informes de fases anteriores se conservan como registro histórico.
+Consulta [ARCHITECTURE.md](ARCHITECTURE.md), [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md), [ROADMAP.md](ROADMAP.md) y [PHASE_3_REPORT.md](PHASE_3_REPORT.md). Los informes de fases anteriores se conservan como registro histórico.

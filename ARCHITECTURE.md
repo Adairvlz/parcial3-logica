@@ -1,4 +1,4 @@
-# Arquitectura · fase 2
+# Arquitectura
 
 ## Responsabilidades
 
@@ -10,25 +10,24 @@
 | Evaluación | `src/core/evaluator.ts` | Evaluación pura con presupuesto, cortocircuito y evidencia estructurada |
 | Entrada de modelos | `src/features/evaluation/modelEditor.ts` | Conversión de los campos y tablas de la UI a los contratos matemáticos |
 | Evaluador gráfico | `src/features/evaluation/SemanticWorkspace.tsx` | Configuración, asignaciones, ejecución, diagnósticos y justificación desplegable |
-| Datos demostrativos      | `src/features/demo/scenario.ts`                     | Fixture matemático original, siete nodos y sus seis dependencias                        |
-| Contratos de trazas      | `src/reasoning/types.ts`                            | Operación, entorno, estado, testigo y justificación                                     |
-| Presentación declarativa | `src/reasoning/demoPlayback.ts`                     | Ocho pasos, tiempos y reconstrucción pura mediante `frameAt`                            |
+| Árbol visible | `src/reasoning/tree.ts` | Decide qué parte de la evidencia se dibuja: rama decisiva, comprobación completa, ramas abiertas y límites |
+| Reproducción | `src/reasoning/playback.ts` | Compila el árbol en pasos y calcula cada estado con `frameAt`, función pura del tiempo |
 | Reloj                    | `src/state/usePlayback.ts`                          | Un requestAnimationFrame cancelable; play, pause, seek, velocidad y movimiento reducido |
-| Geometría                | `src/visualization/organicLayout.ts`                | Layout orgánico de escritorio/móvil, Bézier y layout de carga sintética                 |
+| Geometría                | `src/visualization/organicLayout.ts`                | Layout por intervalos de hojas para cualquier árbol y curvas Bézier                     |
 | Escena                   | `src/visualization/ReasoningCanvas.tsx`             | React Flow, núcleos, conexiones, cámara, selección, detalle por zoom y atmósfera        |
-| Interfaz contextual      | `src/features/laboratory/`                          | Timeline e inspector sincronizado con el instante de reproducción                       |
+| Vista del árbol          | `src/features/laboratory/`                          | `ReasoningView` une árbol, reloj y canvas; línea de tiempo e inspector sincronizados    |
 | Edición y navegación     | `src/features/editor/`, `src/state/useWorkspace.ts` | Editor de fórmulas y pestaña activa; el borrador se conserva al cambiar de pestaña      |
 | Shell                    | `src/App.tsx`, `src/ui/`                            | Barra con dos pestañas, escena del árbol y modo inmersivo                               |
 
 React 19, TypeScript estricto, Vite, React Flow 12 y Lucide. Sin dependencias nuevas: SVG y CSS aportan profundidad 2.5D sin WebGL, Three.js ni un motor de física. Las conexiones son seis curvas de dependencia, no una malla decorativa.
 
-## Fuente matemática y estado de presentación
+## Del motor al árbol
 
-El fixture original permanece separado del tiempo y de las coordenadas. Para `∀x ∃y P(x,y)`, se conserva un hijo por cada `x ∈ {a,b,c}` y un átomo por testigo: `b`, `c`, `a`. No se agregan intentos fallidos ni ciclos.
+`Evidence` es la única fuente. `buildVisibleTree` elige qué nodos se dibujan, `compileTimeline` recorre esos nodos en profundidad y produce dos pasos por nodo (entra y se resuelve), y `frameAt(timeline, time)` devuelve estados visibles y pulsos como función pura del tiempo absoluto. Ninguna capa calcula lógica: un nodo se pinta falso porque la evidencia dice falso.
 
-`demoTrace.source = 'demo'` sigue siendo la procedencia. `frameAt(time)` devuelve estados visibles y pulsos como función pura del tiempo absoluto. No calcula lógica arbitraria: representa en ocho pasos una demostración previamente verificada. Una hoja se resuelve antes de su existencial; cada existencial devuelve su resultado antes de resolver la raíz.
+Cada nodo tiene un identificador derivado de su posición en la evidencia (`r`, `r.0`, `r.0.1`), estable al abrir y colapsar ramas. `ReasoningView` se vuelve a montar por cada evaluación, de modo que ramas abiertas y selección no sobreviven a su resultado. Editar fórmula, modelo o asignaciones retira el resultado y deja el árbol vacío.
 
-El inspector consulta **el estado del frame**, no solo el resultado final del fixture. Un nodo pendiente no revela el testigo como encontrado ni muestra su conclusión futura. Al editar una fórmula, se detiene la reproducción y se retiran nodos y resultados; el texto exige igualdad exacta para recuperar el fixture.
+El inspector consulta **el estado del frame**, no solo el resultado final: un nodo pendiente no revela su conclusión antes de tiempo.
 
 ## Reloj e interrupciones
 
@@ -40,17 +39,15 @@ La cámara usa un RAF cancelable independiente para interpolar un viewport solic
 
 ## Geometría y rendimiento
 
-`TreeLayout` recibe identificadores y padres y devuelve posiciones; no devuelve resultados. El ejemplo tiene una composición deliberadamente asimétrica y otra más estrecha para móvil. Un layout por intervalos de hojas posiciona el fixture sintético de 40 nodos. El tipo de operación, los estados y la selección son atributos separados.
+`organicLayout` recibe identificadores y padres y devuelve posiciones; no conoce valores. Reserva un intervalo por hoja, así los subárboles no se pisan, con cualquier forma de fórmula.
 
-Cada conexión tiene una curva Bézier cúbica, un trazo difuso y un filamento. `pathLength` permite crecimiento reproducible; la misma función cúbica posiciona los pulsos, sin consultas DOM de longitud en cada frame. Las ramas casi verticales se arquean para dejar espacio a las etiquetas.
+Cada conexión tiene una curva Bézier cúbica, un trazo difuso y un filamento. `pathLength` permite crecimiento reproducible; la misma función cúbica posiciona los pulsos, sin consultas DOM de longitud en cada frame. Los hermanos se arquean en sentidos opuestos para no cruzarse.
 
-La cantidad de partículas está acotada: 38 puntos ambientales y como máximo un pulso por conexión; no se generan partículas acumulativas. El caso sintético reduce halos/filtros, no reproduce evaluaciones y activa el renderizado de elementos visibles. Los componentes de nodos y aristas están memoizados. Al acercarse, seleccionar o enfocar aparecen detalles secundarios.
-
-Las pruebas de 40 nodos verifican layout e interacción, no garantizan rendimiento con cientos. Quedan pendientes agrupación, contracción, layout de trazas arbitrarias y presupuestos de animación para árboles grandes.
+La cantidad de partículas está acotada: 38 puntos ambientales y como máximo un pulso por conexión. El árbol tiene un máximo de 200 nodos; desde 40 se retiran halos y se renderizan solo los elementos visibles. Con más de 15 nodos la cámara deja de perseguir cada paso y mantiene el árbol completo. La duración apunta a unos 26 segundos, sin importar el tamaño.
 
 ## Rutas y estado
 
-Solo hay dos vistas. `#/evaluate` (Evaluador) es la entrada predeterminada, incluso para rutas desconocidas. `#/laboratory` (Árbol) muestra el ejemplo DEMO, independiente de la fórmula del Evaluador. La fórmula y el modelo editable se conservan al cambiar de pestaña; no hay persistencia al recargar, backend ni publicación remota.
+Solo hay dos vistas. `#/evaluate` (Evaluador) es la entrada predeterminada, incluso para rutas desconocidas. `#/laboratory` (Árbol) muestra el razonamiento de la última evaluación. La fórmula y el modelo editable se conservan al cambiar de pestaña; no hay persistencia al recargar, backend ni publicación remota.
 
 ## Pipeline semántico
 
@@ -64,15 +61,7 @@ Solo hay dos vistas. `#/evaluate` (Evaluador) es la entrada predeterminada, incl
 
 La evidencia contiene operación tipada, rango de fórmula, entorno, explicación, valores de términos, hijos comprobados, testigos/contraejemplos y cortocircuitos. Conserva todos los casos necesarios para universal verdadero o existencial falso. El frontend solo presenta estos datos; no calcula reglas lógicas. La vista de evidencia monta sus descendientes al expandirlos.
 
-La evaluación es síncrona y está acotada a 250000 operaciones, sin worker ni backend. Las entradas también tienen límites explícitos. Alcanzar un límite nunca convierte un cálculo incompleto en falso. Cada edición invalida inmediatamente el resultado; ocultar una vista no pierde su borrador. El árbol luminoso no consume todavía evidencia real.
-
-## Integración futura
-
-El motor de fase 2 ya produce resultados y evidencia estructurada en `core/`, con pruebas independientes de React. La fase 3 convertirá esa evidencia y el AST en trazas visuales, identificadores de nodos, conexiones y layout arbitrario. La API temporal y el renderer podrán consumir la presentación compilada desde esos eventos.
-
-Las funciones de aridad n deben ser totales sobre Dⁿ, con salidas en D y exactamente una salida por entrada. Las relaciones no vacías requieren al menos una tupla, no todas. Un lenguaje sin funciones no necesita tablas ficticias. Las constantes se representan con aridad cero y `inputs: []`; una relación no vacía de aridad cero solo puede contener `()`. Estas condiciones ya están validadas por el motor.
-
-## Documentación técnica consultada
+La evaluación es síncrona y está acotada a 250000 operaciones, sin worker ni backend. Las entradas también tienen límites explícitos. Alcanzar un límite nunca convierte un cálculo incompleto en falso. Cada edición invalida inmediatamente el resultado; ocultar una vista no pierde su borrador. ## Documentación técnica consultada
 
 - [React Flow: instancia y control de viewport](https://reactflow.dev/api-reference/types/react-flow-instance).
 - [React Flow: conexiones SVG personalizadas](https://reactflow.dev/learn/customization/custom-edges).

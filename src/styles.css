@@ -259,18 +259,6 @@ code {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.demo-label {
-  display: inline-flex;
-  border: 1px solid #74619755;
-  color: #b1a1d2;
-  background: #5a3c7b14;
-  font-family: var(--mono);
-  font-size: 7px;
-  letter-spacing: 0.8px;
-  border-radius: 4px;
-  padding: 4px 6px;
-  white-space: nowrap;
-}
 .evaluate-button {
   display: flex;
   align-items: center;
@@ -633,10 +621,6 @@ code {
 .spatial-controls button:hover {
   background: #83aec21a;
 }
-.spatial-controls .enabled {
-  color: #83e4c5;
-  background: #64c4a81a;
-}
 .spatial-controls > i {
   height: 15px;
   border-left: 1px solid #90abc122;
@@ -808,10 +792,6 @@ code {
   color: #859bb3;
   margin-top: 5px;
   max-width: 450px;
-}
-.timeline-story .demo-label {
-  font-size: 6px;
-  margin-top: 2px;
 }
 .time-scrubber {
   -webkit-appearance: none;
@@ -1147,11 +1127,6 @@ code {
   border-radius: 4px;
   color: #c1b0e8;
 }
-.inspector-foot {
-  margin-top: 17px;
-  font-size: 7px;
-  color: #637d99;
-}
 .primary-button {
   display: inline-flex;
   align-items: center;
@@ -1208,11 +1183,6 @@ code {
 }
 .skip-link:focus {
   top: 8px;
-}
-.organic-scene.compact {
-  position: relative;
-  width: 100%;
-  height: 100%;
 }
 @keyframes ambient-drift {
   from {
@@ -1294,9 +1264,6 @@ code {
   }
   .timeline-story p {
     font-size: 7px;
-  }
-  .timeline-story .demo-label {
-    display: none;
   }
   .step-markers {
     gap: 1px;
@@ -1433,10 +1400,6 @@ code {
   .active-formula > span:first-of-type {
     font-size: 14px;
     max-width: 100%;
-  }
-  .formula-dock .demo-label {
-    font-size: 6px;
-    padding: 3px 4px;
   }
   .evaluate-button {
     padding: 7px;
@@ -1641,13 +1604,7 @@ code {
   .canvas-empty p {
     font-size: 10px;
   }
-  .canvas-empty .demo-label {
-    font-size: 6px;
-  }
 }
-.reduce-motion *,
-.reduce-motion *:before,
-.reduce-motion *:after,
 .motion-reduced * {
   animation: none !important;
   transition: none !important;
@@ -1680,7 +1637,122 @@ code {
   font-size: var(--label-size, 16px);
 }
 
-.demo-workspace {
+.tree-workspace {
   position: absolute;
   inset: 0;
+}
+.organic-node.connective {
+  --core-size: 76px;
+  --orb: #8fb4e8;
+  --type-rgb: 104, 150, 220;
+}
+.key-connective {
+  background: #8fb4e8;
+}
+.connective .orb-core > span {
+  font-size: 30px;
+}
+.node-formula {
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.organic-node.state-false .orb-core {
+  border-color: #fb7185;
+  box-shadow:
+    inset 0 0 22px #fb718540,
+    inset -7px -10px 19px #02050a,
+    0 0 20px #fb718545,
+    0 0 55px #fb71851f;
+}
+.organic-node.state-false .node-formula {
+  color: #f9a8b4;
+}
+.organic-node.role-witness .orb-core {
+  outline: 2px solid #74f5c9;
+  outline-offset: 6px;
+}
+.organic-node.role-counterexample .orb-core {
+  outline: 2px solid #fb7185;
+  outline-offset: 6px;
+}
+.organic-node.role-witness .orb-kind {
+  color: #74f5c9;
+}
+.organic-node.role-counterexample .orb-kind {
+  color: #fb7185;
+}
+.orb-expander {
+  position: absolute;
+  left: calc(90px - var(--core-size) * 0.55);
+  top: calc(60px + var(--core-size) * 0.23);
+  min-width: 26px;
+  height: 21px;
+  padding: 0 6px;
+  border-radius: 11px;
+  border: 1px solid #7f9cc0;
+  background: #0f1c2d;
+  color: #cfe1f5;
+  font-family: var(--mono);
+  font-size: 11px;
+  z-index: 4;
+  box-shadow: 0 0 0 3px #070d17;
+}
+.orb-expander:hover {
+  background: #1d3049;
+  color: #fff;
+}
+.dense-scene .orb-halo,
+.dense-scene .branch-aura,
+.dense-scene .orbit-two {
+  display: none;
+}
+.dense-scene .orb-core {
+  backdrop-filter: none;
+}
+.result-beacon.refuted .beacon-icon {
+  color: #ffc4cd;
+  border-color: #fb7185;
+  background: #fb718526;
+}
+.result-beacon.refuted > div > span {
+  color: #f9a8b4;
+}
+.badge.coral {
+  color: #ffb4c0;
+  border-color: #fb718566;
+  background: #fb71851c;
+}
+.decisive.refutes {
+  border-color: #fb718555;
+  background: #fb718514;
+}
+.decisive.refutes .eyebrow,
+.decisive.refutes strong {
+  color: #fda4b2;
+}
+.branch-toggle {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid #93aac22a;
+  border-radius: 7px;
+  background: #0d1928;
+  color: #cfe1f5;
+  font-size: 11px;
+}
+.branch-toggle:hover {
+  background: #17263a;
+}
+.tree-link {
+  margin: 0 0 16px;
+}
+.canvas-empty .primary-button {
+  margin-top: 16px;
+  display: inline-flex;
+}
+.orb-kind {
+  font-size: calc(var(--label-size) * 0.5);
 }

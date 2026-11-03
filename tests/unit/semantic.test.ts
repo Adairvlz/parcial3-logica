@@ -3,11 +3,6 @@ import { evaluateRequest, EVALUATION_BUDGET } from "../../src/core/evaluator";
 import { parseFormula, tokenize } from "../../src/core/parser";
 import { analyzeAST, validateModel } from "../../src/core/validation";
 import {
-  demoTrace,
-  interpretation,
-  language,
-} from "../../src/features/demo/scenario";
-import {
   initialModel,
   readModelDraft,
 } from "../../src/features/evaluation/modelEditor";
@@ -17,6 +12,21 @@ import type {
   LogicalLanguage,
 } from "../../src/core/types";
 
+const language: LogicalLanguage = {
+  functions: [],
+  predicates: [{ name: "P", arity: 2 }],
+};
+const interpretation: Interpretation = {
+  domain: ["a", "b", "c"],
+  relations: {
+    P: [
+      ["a", "b"],
+      ["b", "c"],
+      ["c", "a"],
+    ],
+  },
+  functions: {},
+};
 const evaluate = (
   formula: string,
   assignment: unknown = {},
@@ -115,8 +125,8 @@ describe("Syntax, scope and free variables", () => {
 });
 
 describe("Mathematical evaluation and evidence", () => {
-  it("reproduces the original demo with complete universal coverage and real witnesses", () => {
-    const result = truth(evaluate(demoTrace.formula));
+  it("evaluates the example with complete universal coverage and real witnesses", () => {
+    const result = truth(evaluate("∀x ∃y P(x,y)"));
     expect(result.value).toBe(true);
     expect(result.evidence.checked).toBe(3);
     expect(result.evidence.children.map((e) => e.witness?.value)).toEqual([

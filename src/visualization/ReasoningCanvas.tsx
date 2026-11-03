@@ -22,31 +22,31 @@ import {
   type Viewport,
 } from "@xyflow/react";
 import { Maximize, Minus, Plus } from "lucide-react";
-import { demoTrace, pathToNode } from "../features/demo/scenario";
+import type { Evidence } from "../core/types";
 import {
-  DEMO_DURATION,
-  demoSteps,
   ease,
-  frameAt,
-  type DemoFrame,
   type EdgeFrame,
   type NodeFrame,
-} from "../reasoning/demoPlayback";
-import type { ReasoningNode } from "../reasoning/types";
+  type ReasoningFrame,
+} from "../reasoning/playback";
 import {
-  organicCurve,
-  organicLayout,
-  portraitLayout,
-  type Point,
-} from "./organicLayout";
+  pathToNode,
+  type VisibleNode,
+  type VisibleTree,
+} from "../reasoning/tree";
+import { organicCurve, organicLayout, type Point } from "./organicLayout";
+
+/** From here on, halos and off-screen nodes are dropped to stay fluid. */
+const DENSE_NODES = 40;
 
 type GraphNode = Node<
   {
-    reasoning: ReasoningNode;
+    node: VisibleNode;
     frame: NodeFrame;
     onPath: boolean;
     dimmed: boolean;
     reduced: boolean;
+    onToggle: (id: string) => void;
   },
   "organic"
 >;
@@ -55,7 +55,10 @@ type GraphEdge = Edge<
     frame: EdgeFrame;
     highlighted: boolean;
     dimmed: boolean;
+    decisive: boolean;
     color: string;
+    endColor: string;
+    value: boolean;
     bend: number;
     assignment: string;
     reduced: boolean;
@@ -67,27 +70,46 @@ const stateLabels = {
   running: "En proceso",
   true: "Verdadero",
   false: "Falso",
-  error: "Error",
 };
+const KIND_NAMES: Record<Evidence["kind"], string> = {
+  forall: "UNIVERSAL",
+  exists: "EXISTENCIAL",
+  predicate: "PREDICADO",
+  equals: "IGUALDAD",
+  not: "NEGACIÓN",
+  and: "CONJUNCIÓN",
+  or: "DISYUNCIÓN",
+  implies: "IMPLICACIÓN",
+  iff: "BICONDICIONAL",
+};
+const familyOf = (kind: Evidence["kind"]) =>
+  kind === "forall"
+    ? "universal"
+    : kind === "exists"
+      ? "existential"
+      : kind === "predicate" || kind === "equals"
+        ? "predicate"
+        : "connective";
 
 const OrganicNode = memo(function OrganicNode({
   data,
   selected,
 }: NodeProps<GraphNode>) {
-  const { reasoning: n, frame, reduced } = data;
+  const { node: n, frame, reduced } = data;
   const zoom = useStore((state) => state.transform[2]);
   const detail = selected || zoom > 1.12;
-  const symbol =
-    n.kind === "universal" ? "∀" : n.kind === "existential" ? "∃" : "P";
+  const family = familyOf(n.evidence.kind);
+  const resolved = frame.state === "true" || frame.state === "false";
+  const canToggle = n.hiddenChildren > 0 || n.childIds.length > 0;
   return (
     <div
-      className={`organic-node ${n.kind} state-${frame.state} ${selected ? "is-selected" : ""} ${data.onPath ? "on-path" : ""} ${data.dimmed ? "dimmed" : ""} ${detail ? "detailed" : ""}`}
+      className={`organic-node ${family} state-${frame.state} ${resolved && n.role ? `role-${n.role}` : ""} ${selected ? "is-selected" : ""} ${data.onPath ? "on-path" : ""} ${data.dimmed ? "dimmed" : ""} ${detail ? "detailed" : ""}`}
       data-state={frame.state}
       style={
         {
           opacity: frame.appearance,
           transform: `scale(${0.55 + 0.45 * frame.appearance})`,
-          "--label-size": `${Math.max(n.kind === "universal" ? 20 : 16, (n.kind === "universal" ? 13 : 10) / Math.max(0.4, zoom))}px`,
+          "--label-size": `${Math.max(family === "universal" ? 20 : 16, (family === "universal" ? 13 : 10) / Math.max(0.4, zoom))}px`,
         } as CSSProperties
       }
     >
@@ -107,7 +129,7 @@ const OrganicNode = memo(function OrganicNode({
         />
       )}
       <div className="orb-core">
-        <span>{symbol}</span>
+        <span>{n.symbol}</span>
         <i className="orb-shine" />
       </div>
       <span
@@ -118,31 +140,40 @@ const OrganicNode = memo(function OrganicNode({
           ? "✓"
           : frame.state === "false"
             ? "×"
-            : frame.state === "error"
-              ? "!"
-              : frame.state === "running"
-                ? "·"
-                : "○"}
+            : frame.state === "running"
+              ? "·"
+              : "○"}
       </span>
+      {canToggle && frame.appearance > 0.05 && (
+        <button
+          className="orb-expander nodrag nopan"
+          aria-label={
+            n.hiddenChildren > 0
+              ? `Abrir ${n.hiddenChildren} ramas de ${n.label}`
+              : `Colapsar ${n.label}`
+          }
+          title={n.hiddenChildren > 0 ? "Abrir ramas" : "Colapsar rama"}
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onToggle(n.id);
+          }}
+        >
+          {n.hiddenChildren > 0 ? `+${n.hiddenChildren}` : "−"}
+        </button>
+      )}
       <div className="orb-label">
         <div className="orb-kind">
-          {n.kind === "universal"
-            ? "UNIVERSAL"
-            : n.kind === "existential"
-              ? "EXISTENCIAL"
-              : "TESTIGO"}
+          {resolved && n.role === "witness"
+            ? "TESTIGO"
+            : resolved && n.role === "counterexample"
+              ? "CONTRAEJEMPLO"
+              : KIND_NAMES[n.evidence.kind]}
         </div>
-        <div className="node-formula">{n.formula}</div>
+        <div className="node-formula" title={n.label}>
+          {n.label}
+        </div>
         <div className="orb-detail">
-          {n.kind === "universal"
-              ? frame.state === "true"
-                ? "Todos los casos verificados"
-                : "Explorando el dominio"
-              : n.kind === "existential"
-                ? `x = ${n.environment.x} · ${stateLabels[frame.state]}`
-                : frame.state === "true"
-                  ? `(${n.environment.x},${n.environment.y}) ∈ P`
-                  : "Comprobando pertenencia"}
+          {resolved ? stateLabels[frame.state] : "Comprobando"}
         </div>
       </div>
     </div>
@@ -157,6 +188,8 @@ const LuminousEdge = memo(function LuminousEdge({
   targetY,
   data,
 }: EdgeProps<GraphEdge>) {
+  // Assignments are the reason for a branch: they stay readable when zoomed out.
+  const zoom = useStore((state) => state.transform[2]);
   if (!data) return null;
   const { frame, color } = data;
   const curve = organicCurve(
@@ -169,8 +202,17 @@ const LuminousEdge = memo(function LuminousEdge({
     frame.pulse === null
       ? null
       : curve.point(frame.reverse ? 1 - frame.pulse : frame.pulse);
+  const returning = data.value ? "#74f5c9" : "#fb7185";
+  const pulseColor = frame.reverse ? returning : "#9bd6ff";
   const gradientId = `gradient-${id.replace(/[^a-z0-9-]/gi, "-")}`;
-  const opacity = data.dimmed ? 0.25 : data.highlighted ? 1 : 0.7;
+  const opacity = data.dimmed
+    ? 0.25
+    : data.highlighted
+      ? 1
+      : data.decisive
+        ? 0.75
+        : 0.45;
+  const labelWidth = data.assignment.length * 6.5 + 16;
   return (
     <g
       className={`luminous-edge ${data.highlighted ? "edge-active" : ""}`}
@@ -188,7 +230,7 @@ const LuminousEdge = memo(function LuminousEdge({
         >
           <stop offset="0%" stopColor={color} />
           <stop offset="55%" stopColor="#69bfe8" />
-          <stop offset="100%" stopColor="#77ead3" />
+          <stop offset="100%" stopColor={data.endColor} />
         </linearGradient>
       </defs>
       <path
@@ -207,16 +249,20 @@ const LuminousEdge = memo(function LuminousEdge({
         strokeDashoffset={1 - frame.growth}
         stroke={`url(#${gradientId})`}
       />
-      {frame.growth > 0.65 && (
-        <g opacity={(frame.growth - 0.65) / 0.35} className="branch-assignment">
+      {data.assignment && frame.growth > 0.65 && (
+        <g
+          opacity={(frame.growth - 0.65) / 0.35}
+          className="branch-assignment"
+          transform={`translate(${label.x} ${label.y}) scale(${Math.max(1, 0.8 / zoom)})`}
+        >
           <rect
-            x={label.x - 27}
-            y={label.y - 10}
-            width={54}
+            x={-labelWidth / 2}
+            y={-10}
+            width={labelWidth}
             height={20}
             rx={10}
           />
-          <text x={label.x} y={label.y + 4} textAnchor="middle">
+          <text y={4} textAnchor="middle">
             {data.assignment}
           </text>
         </g>
@@ -230,14 +276,14 @@ const LuminousEdge = memo(function LuminousEdge({
             cx={pulse.x}
             cy={pulse.y}
             r={12}
-            fill={frame.reverse ? "#74f5c9" : "#9bd6ff"}
+            fill={pulseColor}
             opacity=".12"
           />
           <circle
             cx={pulse.x}
             cy={pulse.y}
             r={5}
-            fill={frame.reverse ? "#74f5c9" : "#9bd6ff"}
+            fill={pulseColor}
             opacity=".5"
           />
           <circle cx={pulse.x} cy={pulse.y} r={2.2} fill="#effffc" />
@@ -251,21 +297,19 @@ const edgeTypes = { luminous: LuminousEdge };
 
 interface CameraProps {
   points: Record<string, Point>;
-  step: number;
+  focus: readonly string[];
   follow: boolean;
   setFollow: (value: boolean) => void;
   reduced: boolean;
-  compact: boolean;
   cancelRef: MutableRefObject<() => void>;
   playing: boolean;
 }
 function Camera({
   points,
-  step,
+  focus,
   follow,
   setFollow,
   reduced,
-  compact,
   cancelRef,
   playing,
 }: CameraProps) {
@@ -276,7 +320,8 @@ function Camera({
   const raf = useRef(0);
   const manualMotion = useRef(false);
   const wasPlaying = useRef(playing);
-  const previousStep = useRef(step);
+  const previousFocus = useRef(focus);
+  const previousSize = useRef("");
   const cancel = useCallback(() => cancelAnimationFrame(raf.current), []);
   useEffect(() => {
     cancelRef.current = cancel;
@@ -309,11 +354,11 @@ function Camera({
         right = Math.max(...visible.map((p) => p.x)) + 110;
       const top = Math.min(...visible.map((p) => p.y)) - 85,
         bottom = Math.max(...visible.map((p) => p.y)) + 125;
-      const topSpace = compact ? 30 : width < 600 ? 150 : 110;
-      const bottomSpace = compact ? 35 : width < 600 ? 200 : 175;
+      const topSpace = width < 600 ? 150 : 110;
+      const bottomSpace = width < 600 ? 200 : 175;
       const usableHeight = Math.max(180, height - topSpace - bottomSpace);
       const targetZoom = Math.min(
-        compact ? 1 : 1.18,
+        1.18,
         (width - 65) / (right - left),
         usableHeight / (bottom - top),
       );
@@ -327,30 +372,34 @@ function Camera({
         manual,
       );
     },
-    [points, width, height, compact, animate],
+    [points, width, height, animate],
   );
   useEffect(() => {
-    frame(Object.keys(points), true);
+    // A resize jumps into place; opening a branch glides to the new shape.
+    const size = `${width}x${height}`;
+    const resized = previousSize.current !== size;
+    previousSize.current = size;
+    frame(Object.keys(points), resized);
     return cancel;
   }, [width, height, points, frame, cancel]);
   useEffect(() => {
     if (!follow) return;
-    frame(demoSteps[step].focus);
+    frame(focus);
     return () => {
       if (!manualMotion.current) cancel();
     };
-  }, [step, follow, frame, cancel]);
+  }, [focus, follow, frame, cancel]);
   useEffect(() => {
     if (
       wasPlaying.current &&
       !playing &&
-      previousStep.current === step &&
+      previousFocus.current === focus &&
       !manualMotion.current
     )
       cancel();
     wasPlaying.current = playing;
-    previousStep.current = step;
-  }, [playing, step, cancel]);
+    previousFocus.current = focus;
+  }, [playing, focus, cancel]);
   const manual = () => {
     cancel();
     setFollow(false);
@@ -369,7 +418,7 @@ function Camera({
       true,
     );
   };
-  return compact ? null : (
+  return (
     <div className="spatial-controls glass" aria-label="Controles del árbol">
       <button aria-label="Acercar" title="Acercar" onClick={() => zoomBy(1.25)}>
         <Plus size={16} />
@@ -394,15 +443,16 @@ function Camera({
 }
 
 export interface CanvasProps {
+  tree: VisibleTree;
   selectedId: string;
   onSelect: (id: string) => void;
-  active: boolean;
-  compact?: boolean;
-  frame?: DemoFrame;
-  reduced?: boolean;
-  follow?: boolean;
-  setFollow?: (value: boolean) => void;
-  playing?: boolean;
+  onToggle: (id: string) => void;
+  frame: ReasoningFrame;
+  focus: readonly string[];
+  reduced: boolean;
+  follow: boolean;
+  setFollow: (value: boolean) => void;
+  playing: boolean;
 }
 export function ReasoningCanvas(props: CanvasProps) {
   return (
@@ -411,42 +461,26 @@ export function ReasoningCanvas(props: CanvasProps) {
     </ReactFlowProvider>
   );
 }
-const defaultFrame = frameAt(DEMO_DURATION);
-const noop = () => {};
 function OrganicScene({
+  tree,
   selectedId,
   onSelect,
-  active,
-  compact = false,
-  frame = defaultFrame,
-  reduced = false,
-  follow = false,
-  setFollow = noop,
-  playing = false,
+  onToggle,
+  frame,
+  focus,
+  reduced,
+  follow,
+  setFollow,
+  playing,
 }: CanvasProps) {
-  const traceNodes = demoTrace.nodes;
-  const [portrait, setPortrait] = useState(
-    () => matchMedia("(max-width:600px)").matches,
-  );
-  useEffect(() => {
-    const media = matchMedia("(max-width:600px)");
-    const update = () => setPortrait(media.matches);
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-  const points = useMemo(
-    () => (portrait ? portraitLayout : organicLayout(traceNodes)),
-    [traceNodes, portrait],
-  );
-  const path = useMemo(
-    () => pathToNode(selectedId, traceNodes),
-    [selectedId, traceNodes],
-  );
-  const cancelCamera = useRef<() => void>(noop);
+  const points = useMemo(() => organicLayout(tree.nodes), [tree]);
+  const path = useMemo(() => pathToNode(tree, selectedId), [tree, selectedId]);
+  const dense = tree.nodes.length > DENSE_NODES;
+  const cancelCamera = useRef<() => void>(() => {});
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const lastPointer = useRef(0);
-  const nodes: GraphNode[] = traceNodes.map((n) => {
-    const nf: NodeFrame = frame.nodes[n.id];
+  const nodes: GraphNode[] = tree.nodes.map((n) => {
+    const nf = frame.nodes[n.id];
     return {
       id: n.id,
       type: "organic",
@@ -456,41 +490,50 @@ function OrganicScene({
       selectable: nf.appearance > 0.05,
       style: { pointerEvents: nf.appearance > 0.05 ? "auto" : "none" },
       data: {
-        reasoning: n,
+        node: n,
         frame: nf,
         onPath: path.includes(n.id),
         dimmed: !!selectedId && !path.includes(n.id),
         reduced,
+        onToggle,
       },
-      ariaLabel: `${n.formula}, ${stateLabels[nf.state]}`,
+      ariaLabel: `${n.label}, ${stateLabels[nf.state]}`,
       width: 180,
       height: 170,
     };
   });
-  const edges: GraphEdge[] = traceNodes
+  const edges: GraphEdge[] = tree.nodes
     .filter((n) => n.parentId)
-    .map((n, i) => ({
+    .map((n, i) => {
+      // Siblings bow away from each other, so their branches never cross.
+      const offset = points[n.id].x - points[n.parentId!].x;
+      const bend = offset < 0 ? -0.65 : offset > 0 ? 0.8 : i % 2 ? -0.65 : 0.8;
+      return {
       id: `${n.parentId}-${n.id}`,
       source: n.parentId!,
       target: n.id,
-      type: "luminous",
+      type: "luminous" as const,
       data: {
         frame: frame.edges[n.id],
         highlighted: path.includes(n.id),
         dimmed: !!selectedId && !path.includes(n.id),
-        color: n.kind === "existential" ? "#af8dff" : "#65d4ef",
-        bend: i % 2 ? -0.65 : 0.8,
-        assignment:
-          n.kind === "existential"
-            ? `x = ${n.environment.x}`
-            : `y = ${n.witness}`,
+        decisive: !!n.evidence.decisive,
+        color:
+          tree.byId.get(n.parentId!)!.evidence.kind === "forall"
+            ? "#af8dff"
+            : "#65d4ef",
+        endColor: n.evidence.value ? "#77ead3" : "#fb7185",
+        value: n.evidence.value,
+        bend,
+        assignment: n.edgeLabel,
         reduced,
       },
       hidden: frame.edges[n.id].growth <= 0,
-    }));
+      };
+    });
   return (
     <div
-      className={`reasoning-canvas organic-scene ${compact ? "compact" : ""} ${reduced ? "motion-reduced" : ""}`}
+      className={`reasoning-canvas organic-scene ${dense ? "dense-scene" : ""} ${reduced ? "motion-reduced" : ""}`}
       data-testid="reasoning-canvas"
       onPointerMove={(event) => {
         if (
@@ -508,7 +551,9 @@ function OrganicScene({
       }}
       onKeyDownCapture={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
-        const id = (event.target as HTMLElement)
+        const target = event.target as HTMLElement;
+        if (target.tagName === "BUTTON") return;
+        const id = target
           .closest(".react-flow__node")
           ?.getAttribute("data-id");
         if (id) {
@@ -542,46 +587,39 @@ function OrganicScene({
           />
         ))}
       </div>
-      {active ? (
-        <ReactFlow<GraphNode, GraphEdge>
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodeClick={(_, node) => onSelect(node.id)}
-          onPaneClick={() => onSelect("")}
-          onMoveStart={(event) => {
-            if (event) {
-              cancelCamera.current();
-              setFollow(false);
-            }
-          }}
-          minZoom={0.08}
-          maxZoom={2.3}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          edgesFocusable={false}
-          deleteKeyCode={null}
-          colorMode="dark"
-          defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
-        >
-          <Camera
-            points={points}
-            step={frame.step}
-            follow={follow}
-            setFollow={setFollow}
-            reduced={reduced}
-            compact={compact}
-            cancelRef={cancelCamera}
-            playing={playing}
-          />
-        </ReactFlow>
-      ) : (
-        <div className="canvas-empty">
-          <span className="empty-symbol">φ</span>
-          <h2>Un nuevo razonamiento espera.</h2>
-        </div>
-      )}
+      <ReactFlow<GraphNode, GraphEdge>
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        onNodeClick={(_, node) => onSelect(node.id)}
+        onPaneClick={() => onSelect("")}
+        onMoveStart={(event) => {
+          if (event) {
+            cancelCamera.current();
+            setFollow(false);
+          }
+        }}
+        minZoom={0.08}
+        maxZoom={2.3}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        edgesFocusable={false}
+        deleteKeyCode={null}
+        colorMode="dark"
+        onlyRenderVisibleElements={dense}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
+      >
+        <Camera
+          points={points}
+          focus={focus}
+          follow={follow}
+          setFollow={setFollow}
+          reduced={reduced}
+          cancelRef={cancelCamera}
+          playing={playing}
+        />
+      </ReactFlow>
     </div>
   );
 }

@@ -9,7 +9,7 @@ test("evaluates the original example with real evidence and isolates the demo", 
 }) => {
   await page.goto("/");
   await expect(page.locator(".semantic-workspace")).toBeVisible();
-  await expect(page.locator(".demo-workspace")).toBeHidden();
+  await expect(page.locator(".tree-workspace")).toBeHidden();
   await evaluate(page);
   await expect(page.locator(".engine-truth")).toContainText("Verdadero");
   await expect(page.locator(".engine-truth")).toContainText("MOTOR REAL");
@@ -21,7 +21,7 @@ test("evaluates the original example with real evidence and isolates the demo", 
     "Testigo: y = b",
   );
   await page.getByRole("link", { name: "Árbol", exact: true }).click();
-  await expect(page.locator(".demo-workspace")).toBeVisible();
+  await expect(page.locator(".tree-workspace")).toBeVisible();
   await expect(page.locator(".semantic-workspace")).toBeHidden();
 });
 

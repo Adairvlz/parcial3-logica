@@ -1,4 +1,4 @@
-# Semántica de LOGOS · fase 2
+# Semántica de LOGOS
 
 ## Lenguaje aceptado
 
@@ -53,7 +53,7 @@ Las variables libres se calculan estructuralmente. Una fórmula abierta requiere
 
 El dominio se recorre en el orden introducido por el usuario. El universal falso conserva el primer contraejemplo; el existencial verdadero conserva el primer testigo. El universal verdadero y el existencial falso conservan la comprobación de todos los elementos. La conjunción, disyunción e implicación usan cortocircuito cuando es válido, después de validar la fórmula entera. El bicondicional compara ambos operandos.
 
-`Evidence` registra operación, rango de origen, fórmula, entorno, regla, resultado, sustituciones de los términos atómicos, hijos comprobados, casos y razones decisivas. Es una justificación semántica; todavía no es la traza animada del árbol.
+`Evidence` registra operación, rango de origen, fórmula, entorno, regla, resultado, sustituciones de los términos atómicos, hijos comprobados, casos y razones decisivas. El árbol y su animación se derivan de esta misma evidencia.
 
 ## Formato de tablas en la interfaz
 
@@ -70,3 +70,13 @@ Dominio: etiquetas separadas por comas. Relación: una tupla entre paréntesis p
 Estos son límites de la implementación, no cambios a la definición matemática de lógica de primer orden. Una entrada fuera de los límites produce un diagnóstico `resource`; agotar el presupuesto durante la evaluación produce `limit`. Ninguno asigna falso ni emite un valor parcial. La cardinalidad necesaria para una función total se calcula con enteros exactos (BigInt).
 
 La evaluación es local, síncrona y determinista. No hay llamadas a modelos de lenguaje ni a servicios remotos para obtener un resultado.
+
+## Qué dibuja el árbol
+
+El árbol no recalcula nada: cada nodo es una entrada de `Evidence`, en el orden en que el motor la produjo.
+
+- **Árbol completo.** Se dibuja todo lo que el motor evaluó, incluidos los intentos que no decidieron, como `y = a` antes del testigo `y = b`. El botón `−` colapsa una rama y `+N` la vuelve a abrir.
+- **Razón decisiva.** El motor marca con `decisive` los hijos de los que depende el valor del padre. Sus ramas se ven más intensas, y el testigo o contraejemplo lleva un anillo y su etiqueta.
+- **Lo que no existe no se dibuja.** Un operando omitido por cortocircuito o los casos posteriores a un contraejemplo nunca se evaluaron, así que no tienen nodo.
+
+Hay un máximo de 200 nodos a la vez. Si un resultado no cabe, primero se abre la rama decisiva y el resto queda cerrado con su valor visible; la justificación del Evaluador conserva siempre todos los casos.

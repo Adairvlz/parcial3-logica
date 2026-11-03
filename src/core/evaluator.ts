@@ -148,6 +148,7 @@ export function evaluateRequest(request: EvaluationRequest): EvaluationOutcome {
       evidence.rule = universal
         ? "Cuantificador universal"
         : "Cuantificador existencial";
+      evidence.variable = node.variable;
       evidence.checked = 0;
       for (const element of domain) {
         const next = new Map(environment);

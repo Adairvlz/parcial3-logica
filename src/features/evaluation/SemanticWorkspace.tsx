@@ -4,6 +4,7 @@ import {
   ChevronDown,
   CircleAlert,
   FlaskConical,
+  GitBranch,
   Plus,
   Play,
   Trash2,
@@ -11,9 +12,18 @@ import {
 } from "lucide-react";
 import { FormulaEditor } from "../editor/FormulaEditor";
 import { evaluateRequest } from "../../core/evaluator";
-import type { EvaluationOutcome, Evidence } from "../../core/types";
-import { initialModel, readModelDraft, type ModelDraft } from "./modelEditor";
-import { DEMO_FORMULA } from "../demo/scenario";
+import type {
+  EvaluationOutcome,
+  Evidence,
+  Interpretation,
+} from "../../core/types";
+import type { Evaluation } from "../laboratory/ReasoningView";
+import {
+  EXAMPLE_FORMULA,
+  initialModel,
+  readModelDraft,
+  type ModelDraft,
+} from "./modelEditor";
 import "./semantic.css";
 
 interface SavedState {
@@ -21,31 +31,68 @@ interface SavedState {
   assignment: Record<string, string>;
   variables: string[];
 }
+function evaluateDraft(
+  draft: ModelDraft,
+  formula: string,
+  assignment: Record<string, string>,
+): { outcome: EvaluationOutcome; interpretation?: Interpretation } {
+  const model = readModelDraft(draft);
+  if (!model.valid)
+    return { outcome: { status: "invalid", errors: model.errors } };
+  return {
+    outcome: evaluateRequest({
+      formula,
+      language: model.language,
+      interpretation: model.interpretation,
+      assignment,
+    }),
+    interpretation: model.interpretation,
+  };
+}
 export function SemanticWorkspace({
   formula,
   onChange,
   visible,
+  onResult,
+  onShowTree,
 }: {
   formula: string;
   onChange: (text: string) => void;
   visible: boolean;
+  onResult: (evaluation: Evaluation | null) => void;
+  onShowTree: () => void;
 }) {
   const [state, setState] = useState<SavedState>({
     model: structuredClone(initialModel),
     assignment: {},
     variables: [],
   });
-  const [outcome, setOutcome] = useState<EvaluationOutcome | null>(null);
-  useEffect(() => {
-    setOutcome(null);
-    setState((s) => ({ ...s, variables: [], assignment: {} }));
-  }, [formula]);
+  // The app opens with the example already evaluated, tree included.
+  const [result, setResult] = useState<ReturnType<typeof evaluateDraft> | null>(
+    () => evaluateDraft(initialModel, formula, {}),
+  );
+  const outcome = result?.outcome ?? null;
+  const evaluationId = useRef(0);
   const nextId = useRef(2);
+  const scrollToResult = useRef(false);
   const formRef = useRef<HTMLTextAreaElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
   const assignmentRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (!outcome) return;
+    onResult(
+      outcome?.status === "evaluated" && result?.interpretation
+        ? {
+            id: ++evaluationId.current,
+            formula,
+            evidence: outcome.evidence,
+            interpretation: result.interpretation,
+          }
+        : null,
+    );
+  }, [result]);
+  useEffect(() => {
+    if (!outcome || !scrollToResult.current) return;
+    scrollToResult.current = false;
     const animation = requestAnimationFrame(() => {
       const target =
         outcome.status === "needs-assignment"
@@ -55,7 +102,7 @@ export function SemanticWorkspace({
     });
     return () => cancelAnimationFrame(animation);
   }, [outcome]);
-  const invalidate = () => setOutcome(null);
+  const invalidate = () => setResult(null);
   const updateModel = (model: ModelDraft) => {
     setState({ model, assignment: {}, variables: [] });
     invalidate();
@@ -66,7 +113,7 @@ export function SemanticWorkspace({
     invalidate();
   };
   const reset = () => {
-    onChange(DEMO_FORMULA);
+    onChange(EXAMPLE_FORMULA);
     setState({
       model: structuredClone(initialModel),
       assignment: {},
@@ -75,20 +122,12 @@ export function SemanticWorkspace({
     invalidate();
   };
   const run = () => {
-    const model = readModelDraft(state.model);
-    if (!model.valid) {
-      setOutcome({ status: "invalid", errors: model.errors });
-      return;
-    }
-    const result = evaluateRequest({
-      formula,
-      language: model.language,
-      interpretation: model.interpretation,
-      assignment: state.assignment,
-    });
-    if (result.status === "needs-assignment")
-      setState((s) => ({ ...s, variables: result.variables }));
-    setOutcome(result);
+    const next = evaluateDraft(state.model, formula, state.assignment);
+    const { outcome } = next;
+    if (outcome.status === "needs-assignment")
+      setState((s) => ({ ...s, variables: outcome.variables }));
+    scrollToResult.current = true;
+    setResult(next);
   };
   const symbolChange = (
     id: number,
@@ -399,6 +438,9 @@ export function SemanticWorkspace({
                   <span>{outcome.operations} operaciones</span>
                 </div>
                 <h3 className="evidence-heading">Justificación verificable</h3>
+                <button className="primary-button tree-link" onClick={onShowTree}>
+                  <GitBranch size={14} /> Ver razonamiento en el árbol
+                </button>
                 <EvidenceView evidence={outcome.evidence} root />
               </>
             )}
