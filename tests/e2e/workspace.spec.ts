@@ -5,24 +5,21 @@ const scrub = async (page: Page, time: number) =>
     .getByRole("slider", { name: "Tiempo de reproducción" })
     .fill(String(time));
 
-test("immersive tree is the entry, routes and history remain functional", async ({
+test("the evaluator is the entry and the tabs switch views with history", async ({
   page,
 }) => {
   await page.goto("/");
+  await expect(page.locator(".semantic-workspace")).toBeVisible();
+  await expect(page.locator(".demo-workspace")).toBeHidden();
+  await page.getByRole("link", { name: "Árbol", exact: true }).click();
+  await expect(page).toHaveURL(/#\/laboratory$/);
   await expect(page.locator(".orb-core")).toHaveCount(7);
   await expect(page.locator(".luminous-edge")).toHaveCount(6);
-  await page.getByRole("link", { name: "Dashboard", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: /No solo evalúes/ }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Explorar el laboratorio" }).click();
-  await expect(page).toHaveURL(/#\/laboratory$/);
-  await page.getByRole("link", { name: "Formula Editor" }).click();
-  await expect(
-    page.getByRole("textbox", { name: "Fórmula lógica" }),
-  ).toBeVisible();
+  await expect(page.locator(".semantic-workspace")).toBeHidden();
+  await page.getByRole("link", { name: "Evaluador", exact: true }).click();
+  await expect(page.locator(".semantic-workspace")).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(page.locator(".demo-workspace")).toBeVisible();
 });
 
 test("selection highlights only the ancestor route and inspector shows the true witness", async ({
@@ -41,12 +38,12 @@ test("selection highlights only the ancestor route and inspector shows the true 
   await expect(page.locator(".inspector")).toHaveCount(0);
 });
 
-test("formula cursor, symbols, navigation persistence and no stale demo results", async ({
+test("formula cursor, symbols, persistence across tabs and an independent demo", async ({
   page,
 }) => {
-  await page.goto("/#/editor");
+  await page.goto("/");
   const input = page.getByRole("textbox", { name: "Fórmula lógica" });
-  await input.fill("P(x) & Q(x)");
+  await input.fill("P(x) # Q(x)");
   await input.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(5, 6));
   await page.getByRole("button", { name: "Insertar ∧" }).click();
   await expect(input).toHaveValue("P(x) ∧ Q(x)");
@@ -54,23 +51,19 @@ test("formula cursor, symbols, navigation persistence and no stale demo results"
   expect(
     await input.evaluate((el: HTMLTextAreaElement) => el.selectionStart),
   ).toBe(6);
-  await expect(page.locator(".react-flow__node")).toHaveCount(0);
-  await expect(page.locator(".result-beacon")).toContainText("Sin evaluar");
-  await expect(
-    page.getByRole("button", { name: "Reproducir", exact: true }),
-  ).toBeDisabled();
-  await page.getByRole("link", { name: "Dashboard", exact: true }).click();
-  await page.getByRole("link", { name: "Formula Editor" }).click();
-  await expect(input).toHaveValue("P(x) ∧ Q(x)");
-  await page.getByRole("button", { name: "Restaurar ejemplo" }).click();
+  await page.getByRole("link", { name: "Árbol", exact: true }).click();
   await expect(page.locator(".orb-core")).toHaveCount(7);
   await expect(page.locator(".result-beacon")).toContainText("Verdadero");
+  await page.getByRole("link", { name: "Evaluador", exact: true }).click();
+  await expect(input).toHaveValue("P(x) ∧ Q(x)");
+  await page.getByRole("button", { name: "Restaurar ejemplo" }).click();
+  await expect(input).toHaveValue("∀x ∃y P(x,y)");
 });
 
 test("play, pause, speed, restart, previous, next and rapid seeks are deterministic", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/laboratory");
   await page.getByRole("button", { name: "Reiniciar", exact: true }).click();
   await expect(page.locator(".timeline")).toHaveAttribute("data-step", "0");
   await expect(page.locator(".result-beacon")).not.toContainText("Verdadero");
@@ -122,7 +115,7 @@ test("play, pause, speed, restart, previous, next and rapid seeks are determinis
 test("edges grow visibly, reverse pulses propagate only after atomic verification, pause freezes them", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/laboratory");
   await scrub(page, 2700);
   const growth = Number(
     await page
@@ -159,11 +152,8 @@ test("edges grow visibly, reverse pulses propagate only after atomic verificatio
 test("camera follows, yields to manual zoom and pan, and fits the tree", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/laboratory");
   await page.getByRole("button", { name: "Animar demo" }).click();
-  await expect(
-    page.getByRole("button", { name: "Seguimiento automático" }),
-  ).toHaveAttribute("aria-pressed", "true");
   await page.waitForTimeout(1100);
   const viewport = page.locator(".react-flow__viewport");
   const start = await viewport.getAttribute("style");
@@ -171,9 +161,6 @@ test("camera follows, yields to manual zoom and pan, and fits the tree", async (
   await page.waitForTimeout(1100);
   expect(await viewport.getAttribute("style")).not.toBe(start);
   await page.getByRole("button", { name: "Acercar", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Seguimiento automático" }),
-  ).toHaveAttribute("aria-pressed", "false");
   await page.waitForTimeout(1100);
   const manual = await viewport.getAttribute("style");
   await scrub(page, 12000);
@@ -205,35 +192,10 @@ test("camera follows, yields to manual zoom and pan, and fits the tree", async (
   }
 });
 
-test("examples modal traps focus, Escape closes, and loading restores the demo", async ({
-  page,
-}) => {
-  await page.goto("/#/editor");
-  await page.getByRole("textbox").fill("∃x Q(x)");
-  await page.getByRole("button", { name: "Ejemplos", exact: true }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  for (let i = 0; i < 4; i++) {
-    await page.keyboard.press("Tab");
-    expect(
-      await page.evaluate(() =>
-        document.querySelector("dialog")?.contains(document.activeElement),
-      ),
-    ).toBe(true);
-  }
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("button", { name: "Ejemplos", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Abrir ejemplo", exact: true })
-    .click();
-  await expect(page).toHaveURL(/#\/laboratory$/);
-  await expect(page.locator(".result-beacon")).toContainText("Verdadero");
-});
-
 test("keyboard node selection and pending inspector do not leak future truth", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/laboratory");
   await page.locator('[data-id="atom-c"]').focus();
   await page.keyboard.press("Enter");
   await expect(page.locator(".inspector-formula")).toHaveText("P(c,a)");
@@ -254,7 +216,7 @@ test("responsive framing, immersive coverage and reduced motion", async ({
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(size);
-    await page.goto("/");
+    await page.goto("/#/laboratory");
     await page.waitForTimeout(200);
     expect(
       await page.evaluate(
@@ -294,44 +256,11 @@ test("responsive framing, immersive coverage and reduced motion", async ({
   await page.getByRole("button", { name: "Salir del modo inmersivo" }).click();
 });
 
-test("visual settings, synthetic 40-node scene, and return to mathematical demo", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Configuración visual", exact: true })
-    .click();
-  await page.getByRole("checkbox", { name: /Reducir movimiento/ }).check();
-  await scrub(page, 15600);
-  await expect(page.locator(".edge-pulse")).toHaveCount(0);
-  await page.getByRole("slider", { name: "Intensidad luminosa" }).fill("0.5");
-  expect(
-    await page
-      .locator(".living-app")
-      .evaluate((el) => getComputedStyle(el).getPropertyValue("--glow")),
-  ).toBe("0.5");
-  await page
-    .getByRole("button", { name: "Probar 40 nodos sintéticos" })
-    .click();
-  await page.waitForTimeout(300);
-  await expect(page.locator(".orb-core")).toHaveCount(40);
-  await expect(page.locator(".luminous-edge")).toHaveCount(39);
-  await expect(page.locator(".synthetic-banner")).toContainText(
-    "Sin evaluación matemática",
-  );
-  await expect(page.locator(".result-beacon")).not.toContainText("Verdadero");
-  await page.screenshot({ path: "test-results/organic-synthetic-40.png" });
-  await page.getByRole("button", { name: "Volver al árbol DEMO" }).click();
-  await expect(page.locator(".orb-core")).toHaveCount(7);
-  await expect(page.locator(".organic-node.state-true")).toHaveCount(7);
-  await expect(page.locator(".result-beacon")).toContainText("Verdadero");
-});
-
 test("a complete playback reaches a justified result and records frame cadence", async ({
   page,
 }, testInfo) => {
   test.setTimeout(35000);
-  await page.goto("/");
+  await page.goto("/#/laboratory");
   await page
     .getByRole("combobox", { name: "Velocidad de reproducción" })
     .selectOption("2");

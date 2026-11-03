@@ -9,27 +9,6 @@
   scrollbar-width: thin;
   color: #dce7f3;
 }
-.semantic-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-.semantic-heading .eyebrow {
-  color: #89ceb9;
-}
-.semantic-heading h1 {
-  font-size: 29px;
-  font-weight: 450;
-  letter-spacing: -0.7px;
-  margin: 12px 0;
-}
-.semantic-heading p {
-  font-size: 12px;
-  color: #91a4bc;
-  line-height: 1.7;
-}
 .semantic-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr);
@@ -193,10 +172,6 @@
   gap: 18px;
   margin-top: 22px;
 }
-.semantic-run > span {
-  font-size: 9px;
-  color: #758ea8;
-}
 .semantic-results {
   align-self: start;
   position: sticky;
@@ -359,39 +334,9 @@
   display: block;
   font-size: 9px;
 }
-.result-card .semantic-boundary {
-  font-size: 10px;
-  line-height: 1.8;
-  border-top: 1px solid #869eb524;
-  padding-top: 17px;
-  margin-top: 22px;
-  color: #7793ad;
-}
-.model-notes h3 {
-  color: #acc3d6;
-}
-.model-notes p {
-  font-size: 11px;
-  color: #7f99b3;
-  line-height: 1.9;
-  margin-top: 10px;
-}
-.semantic-entry {
-  color: #99dec8 !important;
-}
-.semantic-workspace .editor-note {
-  color: #83a9a3;
-}
-.semantic-workspace .section-heading .badge {
-  font-size: 7px;
-}
 @media (min-width: 1700px) {
   .semantic-workspace {
     padding: 40px 65px;
-  }
-  .semantic-heading {
-    max-width: 1450px;
-    margin: 0 auto 35px;
   }
 }
 @media (max-width: 1050px) {
@@ -407,24 +352,10 @@
   .semantic-card {
     padding: 20px;
   }
-  .semantic-heading h1 {
-    font-size: 25px;
-  }
 }
 @media (max-width: 600px) {
   .semantic-workspace {
     padding: 22px 12px 40px;
-  }
-  .semantic-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 15px;
-  }
-  .semantic-heading h1 {
-    font-size: 22px;
-  }
-  .semantic-heading p {
-    font-size: 10px;
   }
   .semantic-card {
     padding: 15px;

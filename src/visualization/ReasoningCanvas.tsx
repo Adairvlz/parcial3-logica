@@ -21,7 +21,7 @@ import {
   type NodeProps,
   type Viewport,
 } from "@xyflow/react";
-import { Crosshair, Focus, Maximize, Minus, Plus } from "lucide-react";
+import { Maximize, Minus, Plus } from "lucide-react";
 import { demoTrace, pathToNode } from "../features/demo/scenario";
 import {
   DEMO_DURATION,
@@ -37,7 +37,6 @@ import {
   organicCurve,
   organicLayout,
   portraitLayout,
-  syntheticTree,
   type Point,
 } from "./organicLayout";
 
@@ -48,7 +47,6 @@ type GraphNode = Node<
     onPath: boolean;
     dimmed: boolean;
     reduced: boolean;
-    synthetic: boolean;
   },
   "organic"
 >;
@@ -132,15 +130,11 @@ const OrganicNode = memo(function OrganicNode({
             ? "UNIVERSAL"
             : n.kind === "existential"
               ? "EXISTENCIAL"
-              : data.synthetic
-                ? "SINTÉTICO"
-                : "TESTIGO"}
+              : "TESTIGO"}
         </div>
         <div className="node-formula">{n.formula}</div>
         <div className="orb-detail">
-          {data.synthetic
-            ? "Sin valor de verdad"
-            : n.kind === "universal"
+          {n.kind === "universal"
               ? frame.state === "true"
                 ? "Todos los casos verificados"
                 : "Explorando el dominio"
@@ -261,10 +255,7 @@ interface CameraProps {
   follow: boolean;
   setFollow: (value: boolean) => void;
   reduced: boolean;
-  selectedId: string;
   compact: boolean;
-  synthetic: boolean;
-  request: number;
   cancelRef: MutableRefObject<() => void>;
   playing: boolean;
 }
@@ -274,10 +265,7 @@ function Camera({
   follow,
   setFollow,
   reduced,
-  selectedId,
   compact,
-  synthetic,
-  request,
   cancelRef,
   playing,
 }: CameraProps) {
@@ -344,14 +332,14 @@ function Camera({
   useEffect(() => {
     frame(Object.keys(points), true);
     return cancel;
-  }, [width, height, points, request, frame, cancel]);
+  }, [width, height, points, frame, cancel]);
   useEffect(() => {
-    if (!follow || synthetic) return;
+    if (!follow) return;
     frame(demoSteps[step].focus);
     return () => {
       if (!manualMotion.current) cancel();
     };
-  }, [step, follow, synthetic, frame, cancel]);
+  }, [step, follow, frame, cancel]);
   useEffect(() => {
     if (
       wasPlaying.current &&
@@ -401,25 +389,6 @@ function Camera({
       >
         <Maximize size={16} />
       </button>
-      <button
-        aria-label="Centrar seleccionado"
-        title="Centrar seleccionado"
-        onClick={() => {
-          manual();
-          frame([selectedId], false, true);
-        }}
-      >
-        <Crosshair size={16} />
-      </button>
-      <button
-        aria-label="Seguimiento automático"
-        title="Seguimiento automático"
-        aria-pressed={follow}
-        onClick={() => setFollow(!follow)}
-        className={follow ? "enabled" : ""}
-      >
-        <Focus size={16} />
-      </button>
     </div>
   );
 }
@@ -433,8 +402,6 @@ export interface CanvasProps {
   reduced?: boolean;
   follow?: boolean;
   setFollow?: (value: boolean) => void;
-  synthetic?: boolean;
-  request?: number;
   playing?: boolean;
 }
 export function ReasoningCanvas(props: CanvasProps) {
@@ -455,14 +422,9 @@ function OrganicScene({
   reduced = false,
   follow = false,
   setFollow = noop,
-  synthetic = false,
-  request = 0,
   playing = false,
 }: CanvasProps) {
-  const traceNodes = useMemo(
-    () => (synthetic ? syntheticTree() : demoTrace.nodes),
-    [synthetic],
-  );
+  const traceNodes = demoTrace.nodes;
   const [portrait, setPortrait] = useState(
     () => matchMedia("(max-width:600px)").matches,
   );
@@ -473,8 +435,8 @@ function OrganicScene({
     return () => media.removeEventListener("change", update);
   }, []);
   const points = useMemo(
-    () => (portrait && !synthetic ? portraitLayout : organicLayout(traceNodes)),
-    [traceNodes, portrait, synthetic],
+    () => (portrait ? portraitLayout : organicLayout(traceNodes)),
+    [traceNodes, portrait],
   );
   const path = useMemo(
     () => pathToNode(selectedId, traceNodes),
@@ -484,9 +446,7 @@ function OrganicScene({
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const lastPointer = useRef(0);
   const nodes: GraphNode[] = traceNodes.map((n) => {
-    const nf: NodeFrame = synthetic
-      ? { appearance: 1, state: "pending", energy: 0 }
-      : frame.nodes[n.id];
+    const nf: NodeFrame = frame.nodes[n.id];
     return {
       id: n.id,
       type: "organic",
@@ -501,7 +461,6 @@ function OrganicScene({
         onPath: path.includes(n.id),
         dimmed: !!selectedId && !path.includes(n.id),
         reduced,
-        synthetic,
       },
       ariaLabel: `${n.formula}, ${stateLabels[nf.state]}`,
       width: 180,
@@ -516,25 +475,22 @@ function OrganicScene({
       target: n.id,
       type: "luminous",
       data: {
-        frame: synthetic
-          ? { growth: 1, pulse: null, reverse: false }
-          : frame.edges[n.id],
+        frame: frame.edges[n.id],
         highlighted: path.includes(n.id),
         dimmed: !!selectedId && !path.includes(n.id),
         color: n.kind === "existential" ? "#af8dff" : "#65d4ef",
         bend: i % 2 ? -0.65 : 0.8,
-        assignment: synthetic
-          ? "SYN"
-          : n.kind === "existential"
+        assignment:
+          n.kind === "existential"
             ? `x = ${n.environment.x}`
             : `y = ${n.witness}`,
         reduced,
       },
-      hidden: !synthetic && frame.edges[n.id].growth <= 0,
+      hidden: frame.edges[n.id].growth <= 0,
     }));
   return (
     <div
-      className={`reasoning-canvas organic-scene ${compact ? "compact" : ""} ${reduced ? "motion-reduced" : ""} ${synthetic ? "synthetic-scene" : ""}`}
+      className={`reasoning-canvas organic-scene ${compact ? "compact" : ""} ${reduced ? "motion-reduced" : ""}`}
       data-testid="reasoning-canvas"
       onPointerMove={(event) => {
         if (
@@ -607,7 +563,6 @@ function OrganicScene({
           edgesFocusable={false}
           deleteKeyCode={null}
           colorMode="dark"
-          onlyRenderVisibleElements={synthetic}
           defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
         >
           <Camera
@@ -616,10 +571,7 @@ function OrganicScene({
             follow={follow}
             setFollow={setFollow}
             reduced={reduced}
-            selectedId={selectedId || traceNodes[0].id}
             compact={compact}
-            synthetic={synthetic}
-            request={request}
             cancelRef={cancelCamera}
             playing={playing}
           />
@@ -628,11 +580,6 @@ function OrganicScene({
         <div className="canvas-empty">
           <span className="empty-symbol">φ</span>
           <h2>Un nuevo razonamiento espera.</h2>
-          <p>
-            Abre Evaluar para calcular tu fórmula con una interpretación, o
-            restaura el ejemplo para explorar el árbol DEMO.
-          </p>
-          <span className="demo-label">MOTOR SEMÁNTICO · FASE 2</span>
         </div>
       )}
     </div>

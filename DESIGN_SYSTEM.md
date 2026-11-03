@@ -4,7 +4,7 @@
 
 Un árbol matemáticamente jerárquico con apariencia orgánica: núcleos circulares suspendidos, ramas Bézier, halos y profundidad 2.5D. El canvas define la composición. No se dibujan conexiones decorativas entre nodos; cada arista corresponde a una dependencia del fixture.
 
-Tres capas: atmósfera tenue, estructura lógica luminosa e interfaz contextual flotante. La barra superior mide 60 px y la navegación 60 px; el modo inmersivo retira ambas. Editor, inspector, configuración y menú son superpuestos y ocultables. El área de canvas ocupa aproximadamente el 89 % de una pantalla de 1366×768 en modo normal y el 100 % en modo inmersivo, con controles superpuestos.
+Tres capas: atmósfera tenue, estructura lógica luminosa e interfaz contextual flotante. La barra superior mide 60 px y contiene las dos pestañas; el modo inmersivo la retira. El inspector es superpuesto y se abre al seleccionar un nodo. El canvas ocupa todo el ancho bajo la barra y el 100 % de la pantalla en modo inmersivo, con controles superpuestos.
 
 ## Colores y significado
 

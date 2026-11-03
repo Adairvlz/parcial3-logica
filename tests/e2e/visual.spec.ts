@@ -11,7 +11,7 @@ test("visual review of organic scene, intermediate propagation and mobile", asyn
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto("/");
+  await page.goto("/#/laboratory");
   await page.waitForTimeout(1400);
   await expect(page.locator(".orb-core")).toHaveCount(7);
   await page.screenshot({ path: "test-results/organic-desktop.png" });
@@ -40,7 +40,7 @@ test("record a continuous demonstration including branch growth and return pulse
 }) => {
   test.setTimeout(35000);
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto("/");
+  await page.goto("/#/laboratory");
   await page.getByRole("button", { name: "Animar demo" }).click();
   await page.waitForTimeout(3000);
   await page.screenshot({ path: "test-results/organic-growing.png" });

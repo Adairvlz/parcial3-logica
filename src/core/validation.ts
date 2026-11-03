@@ -1,4 +1,4 @@
-import { IDENTIFIER, SYNTAX_LIMITS } from "./parser";
+import { IDENTIFIER, isReservedWord, SYNTAX_LIMITS } from "./parser";
 import type {
   Diagnostic,
   FormulaAST,
@@ -64,6 +64,14 @@ export function validateModel(
           "symbol",
           path,
           "El nombre debe comenzar con una letra o _ y contener solo letras, números o _.",
+        );
+        return;
+      }
+      if (isReservedWord(symbol.name)) {
+        add(
+          "symbol",
+          path,
+          `${symbol.name} está reservado para escribir el cuantificador desde el teclado.`,
         );
         return;
       }
@@ -306,6 +314,10 @@ export function analyzeAST(
             node.range,
           );
         node.args.forEach((arg) => term(arg, bound, depth + 1));
+        break;
+      case "equals":
+        term(node.left, bound, depth + 1);
+        term(node.right, bound, depth + 1);
         break;
       case "not":
         walk(node.operand, bound, depth + 1);

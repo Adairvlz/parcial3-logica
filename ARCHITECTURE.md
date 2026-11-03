@@ -17,8 +17,8 @@
 | Geometría                | `src/visualization/organicLayout.ts`                | Layout orgánico de escritorio/móvil, Bézier y layout de carga sintética                 |
 | Escena                   | `src/visualization/ReasoningCanvas.tsx`             | React Flow, núcleos, conexiones, cámara, selección, detalle por zoom y atmósfera        |
 | Interfaz contextual      | `src/features/laboratory/`                          | Timeline e inspector sincronizado con el instante de reproducción                       |
-| Edición y navegación     | `src/features/editor/`, `src/state/useWorkspace.ts` | Se conserva el editor y su borrador durante la navegación                               |
-| Shell                    | `src/App.tsx`, `src/ui/`                            | Barra compacta, paneles flotantes, modo inmersivo, ejemplos y ajustes                   |
+| Edición y navegación     | `src/features/editor/`, `src/state/useWorkspace.ts` | Editor de fórmulas y pestaña activa; el borrador se conserva al cambiar de pestaña      |
+| Shell                    | `src/App.tsx`, `src/ui/`                            | Barra con dos pestañas, escena del árbol y modo inmersivo                               |
 
 React 19, TypeScript estricto, Vite, React Flow 12 y Lucide. Sin dependencias nuevas: SVG y CSS aportan profundidad 2.5D sin WebGL, Three.js ni un motor de física. Las conexiones son seis curvas de dependencia, no una malla decorativa.
 
@@ -50,7 +50,7 @@ Las pruebas de 40 nodos verifican layout e interacción, no garantizan rendimien
 
 ## Rutas y estado
 
-`#/laboratory` es la entrada predeterminada, incluso para rutas desconocidas. `#/dashboard` ofrece una introducción sobre el mismo universo, sin cuadrícula de tarjetas. `#/editor` abre el editor flotante. `#/evaluate` muestra el motor real y oculta el espacio DEMO. La fórmula y el modelo editable se conservan entre rutas; no hay persistencia al recargar, backend ni publicación remota.
+Solo hay dos vistas. `#/evaluate` (Evaluador) es la entrada predeterminada, incluso para rutas desconocidas. `#/laboratory` (Árbol) muestra el ejemplo DEMO, independiente de la fórmula del Evaluador. La fórmula y el modelo editable se conservan al cambiar de pestaña; no hay persistencia al recargar, backend ni publicación remota.
 
 ## Pipeline semántico
 
@@ -64,7 +64,7 @@ Las pruebas de 40 nodos verifican layout e interacción, no garantizan rendimien
 
 La evidencia contiene operación tipada, rango de fórmula, entorno, explicación, valores de términos, hijos comprobados, testigos/contraejemplos y cortocircuitos. Conserva todos los casos necesarios para universal verdadero o existencial falso. El frontend solo presenta estos datos; no calcula reglas lógicas. La vista de evidencia monta sus descendientes al expandirlos.
 
-La evaluación es síncrona y está acotada a 10000 operaciones, sin worker ni backend. Las entradas también tienen límites explícitos. Alcanzar un límite nunca convierte un cálculo incompleto en falso. Cada edición invalida inmediatamente el resultado; ocultar una vista no pierde su borrador. El árbol luminoso no consume todavía evidencia real.
+La evaluación es síncrona y está acotada a 250000 operaciones, sin worker ni backend. Las entradas también tienen límites explícitos. Alcanzar un límite nunca convierte un cálculo incompleto en falso. Cada edición invalida inmediatamente el resultado; ocultar una vista no pierde su borrador. El árbol luminoso no consume todavía evidencia real.
 
 ## Integración futura
 

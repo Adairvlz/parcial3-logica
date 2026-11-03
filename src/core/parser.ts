@@ -12,6 +12,19 @@ export const SYNTAX_LIMITS = {
   tokens: 2048,
   depth: 128,
 } as const;
+/** Keyboard spellings. Tokens keep their source text, so ranges stay exact. */
+const SYMBOL_ALIASES: readonly (readonly [string, string])[] = [
+  ["<->", "↔"],
+  ["->", "→"],
+  ["~", "¬"],
+  ["&", "∧"],
+  ["|", "∨"],
+];
+const WORD_ALIASES = new Map([
+  ["forall", "∀"],
+  ["exists", "∃"],
+]);
+export const isReservedWord = (name: string) => WORD_ALIASES.has(name);
 export interface Token {
   kind: string;
   text: string;
@@ -46,20 +59,35 @@ export function tokenize(
       const name = /^[\p{L}_][\p{L}\p{N}_]*/u.exec(text.slice(i));
       if (name) {
         i += name[0].length;
-        tokens.push({ kind: "name", text: name[0], range: { start, end: i } });
-      } else if ("¬∧∨→↔∀∃(),.".includes(text[i])) {
+        tokens.push({
+          kind: WORD_ALIASES.get(name[0]) ?? "name",
+          text: name[0],
+          range: { start, end: i },
+        });
+      } else if ("¬∧∨→↔∀∃=(),.".includes(text[i])) {
         i++;
         tokens.push({
           kind: text[start],
           text: text[start],
           range: { start, end: i },
         });
-      } else
-        fail(
-          "character",
-          `Símbolo «${text[i]}» no admitido. Usa ¬, ∧, ∨, →, ↔, ∀ y ∃; la igualdad y los alias ASCII no están habilitados.`,
-          { start, end: start + 1 },
+      } else {
+        const alias = SYMBOL_ALIASES.find(([spelling]) =>
+          text.startsWith(spelling, i),
         );
+        if (!alias)
+          fail(
+            "character",
+            `Símbolo «${text[i]}» no admitido. Usa ¬, ∧, ∨, →, ↔, ∀, ∃ y =, o desde el teclado ~, &, |, ->, <->, forall y exists.`,
+            { start, end: start + 1 },
+          );
+        i += alias[0].length;
+        tokens.push({
+          kind: alias[1],
+          text: alias[0],
+          range: { start, end: i },
+        });
+      }
       if (tokens.length > SYNTAX_LIMITS.tokens)
         fail(
           "resource",
@@ -76,7 +104,7 @@ export function tokenize(
   }
 }
 
-/** Quantifiers bind the complete following expression, up to its closing parenthesis. */
+/** Quantifiers bind like ¬: only the next unary formula, as in the course notation. */
 export function parseFormula(
   text: string,
   language: LogicalLanguage,
@@ -96,7 +124,7 @@ export function parseFormula(
     if (peek().kind !== kind)
       fail(
         "syntax",
-        `Se esperaba ${kind === "name" ? "un identificador" : `«${kind}»`}; se encontró ${peek().kind === "eof" ? "el final de la fórmula" : `«${peek().text}»`}.`,
+        `Se esperaba ${kind === "name" ? "un identificador" : kind === "eof" ? "el final de la fórmula" : `«${kind}»`}; se encontró ${peek().kind === "eof" ? "el final de la fórmula" : `«${peek().text}»`}.`,
         peek().range,
       );
     return take();
@@ -123,25 +151,25 @@ export function parseFormula(
     expect(")");
     return args;
   }
+  function application(token: Token): TermAST {
+    if (accept("(")) {
+      const args = argumentsList();
+      return {
+        kind: "function",
+        name: token.text,
+        args,
+        range: {
+          start: token.range.start,
+          end: tokens[cursor - 1].range.end,
+        },
+      };
+    }
+    return constants.has(token.text)
+      ? { kind: "function", name: token.text, args: [], range: token.range }
+      : { kind: "variable", name: token.text, range: token.range };
+  }
   function term(): TermAST {
-    return nested(() => {
-      const token = expect("name");
-      if (accept("(")) {
-        const args = argumentsList();
-        return {
-          kind: "function",
-          name: token.text,
-          args,
-          range: {
-            start: token.range.start,
-            end: tokens[cursor - 1].range.end,
-          },
-        };
-      }
-      return constants.has(token.text)
-        ? { kind: "function", name: token.text, args: [], range: token.range }
-        : { kind: "variable", name: token.text, range: token.range };
-    });
+    return nested(() => application(expect("name")));
   }
   function unary(): FormulaAST {
     return nested(() => {
@@ -158,7 +186,7 @@ export function parseFormula(
         take();
         const variable = expect("name");
         accept(".");
-        const body = iff();
+        const body = unary();
         return {
           kind: token.kind === "∀" ? "forall" : "exists",
           variable: variable.text,
@@ -174,14 +202,21 @@ export function parseFormula(
           range: { start: token.range.start, end: close.range.end },
         };
       }
-      const name = expect("name");
-      let args: TermAST[] = [];
-      if (accept("(")) args = argumentsList();
+      const head = application(expect("name"));
+      if (accept("=")) {
+        const right = term();
+        return {
+          kind: "equals",
+          left: head,
+          right,
+          range: { start: head.range.start, end: right.range.end },
+        };
+      }
       return {
         kind: "predicate",
-        name: name.text,
-        args,
-        range: { start: name.range.start, end: tokens[cursor - 1].range.end },
+        name: head.name,
+        args: head.kind === "function" ? head.args : [],
+        range: head.range,
       };
     });
   }

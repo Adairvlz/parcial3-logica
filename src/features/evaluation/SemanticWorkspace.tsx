@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft,
   Check,
   ChevronDown,
   CircleAlert,
@@ -8,6 +7,7 @@ import {
   Plus,
   Play,
   Trash2,
+  X,
 } from "lucide-react";
 import { FormulaEditor } from "../editor/FormulaEditor";
 import { evaluateRequest } from "../../core/evaluator";
@@ -24,12 +24,10 @@ interface SavedState {
 export function SemanticWorkspace({
   formula,
   onChange,
-  onClose,
   visible,
 }: {
   formula: string;
   onChange: (text: string) => void;
-  onClose: () => void;
   visible: boolean;
 }) {
   const [state, setState] = useState<SavedState>({
@@ -109,21 +107,6 @@ export function SemanticWorkspace({
       aria-label="Evaluador semántico"
       hidden={!visible}
     >
-      <header className="semantic-heading">
-        <div>
-          <span className="eyebrow">
-            <FlaskConical size={13} /> FASE 02 · MOTOR DETERMINISTA
-          </span>
-          <h1>Del símbolo al significado.</h1>
-          <p>
-            Define un universo finito. Evalúa una fórmula. Revisa su
-            justificación.
-          </p>
-        </div>
-        <button className="secondary-button" onClick={onClose}>
-          <ArrowLeft size={14} /> Volver al árbol DEMO
-        </button>
-      </header>
       <div className="semantic-layout">
         <div className="semantic-inputs">
           <section className="semantic-card">
@@ -266,9 +249,7 @@ export function SemanticWorkspace({
               <FormulaEditor
                 formula={formula}
                 onChange={updateFormula}
-                isDemo={false}
                 onReset={reset}
-                mode="semantic"
               />
             </div>
             <details className="grammar-help">
@@ -277,15 +258,16 @@ export function SemanticWorkspace({
                 <ChevronDown size={13} />
               </summary>
               <p>
-                Precedencia: ¬, ∧, ∨, →, ↔. La implicación se asocia a la
-                derecha. ∀x y ∃x abarcan la expresión siguiente hasta el cierre
-                de paréntesis: ∀x P(x) → Q(x) significa ∀x (P(x) → Q(x)). Usa
-                (∀x P(x)) → Q(x) para dejar libre la segunda x.
+                Precedencia: ¬, ∀ y ∃, luego ∧, ∨, →, ↔. La implicación se asocia
+                a la derecha. ∀x y ∃x abarcan solo lo inmediato: ∀x P(x) → Q(x)
+                significa (∀x P(x)) → Q(x) y deja libre la segunda x. Usa
+                ∀x (P(x) → Q(x)) para ligarla.
               </p>
               <p>
-                Se admite un punto opcional: ∀x. P(x). Las constantes son
-                funciones de aridad cero, escritas c o c(). No se admiten
-                igualdad ni alias ASCII en esta versión.
+                Desde el teclado: ~ para ¬, &amp; para ∧, | para ∨, -&gt; para →,
+                &lt;-&gt; para ↔, forall para ∀ y exists para ∃. La igualdad se
+                escribe t = s entre términos. Las constantes son funciones de
+                aridad cero, escritas c o c().
               </p>
             </details>
           </section>
@@ -332,7 +314,6 @@ export function SemanticWorkspace({
             <button className="primary-button" onClick={run}>
               <Play size={14} /> Evaluar fórmula
             </button>
-            <span>Evaluación local · sin IA · sin backend</span>
           </div>
         </div>
         <aside className="semantic-results" aria-live="polite">
@@ -402,7 +383,7 @@ export function SemanticWorkspace({
                 <div
                   className={`engine-truth ${outcome.value ? "true" : "false"}`}
                 >
-                  <Check size={24} />
+                  {outcome.value ? <Check size={24} /> : <X size={24} />}
                   <h2>{outcome.value ? "Verdadero" : "Falso"}</h2>
                   <span>MOTOR REAL</span>
                 </div>
@@ -419,27 +400,8 @@ export function SemanticWorkspace({
                 </div>
                 <h3 className="evidence-heading">Justificación verificable</h3>
                 <EvidenceView evidence={outcome.evidence} root />
-                <p className="semantic-boundary">
-                  Este resultado corresponde a tus entradas actuales. El árbol
-                  luminoso de siete nodos sigue siendo una demostración
-                  independiente; los árboles de evaluación arbitrarios llegarán
-                  en fase 3.
-                </p>
               </>
             )}
-          </div>
-          <div className="semantic-card model-notes">
-            <h3>Condiciones del modelo</h3>
-            <p>
-              Dominio no vacío. Todas las funciones son totales. Todas las
-              relaciones tienen al menos una tupla, pero no necesitan contener
-              todas las tuplas posibles.
-            </p>
-            <p>
-              Un error de sintaxis, aridad, tabla o asignación impide evaluar.
-              Un resultado falso es una fórmula válida bajo una interpretación
-              válida.
-            </p>
           </div>
         </aside>
       </div>
@@ -454,7 +416,7 @@ function EvidenceView({
   evidence: Evidence;
   root?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(root);
+  const [expanded, setExpanded] = useState(root || Boolean(e.decisive));
   return (
     <div className={`evidence ${e.value ? "true" : "false"}`}>
       <button

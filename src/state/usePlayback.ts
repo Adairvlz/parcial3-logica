@@ -11,14 +11,13 @@ export function useReducedMotion() {
   const [system, setSystem] = useState(
     () => matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
-  const [disabled, setDisabled] = useState(false);
   useEffect(() => {
     const media = matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setSystem(media.matches);
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
-  return { reduced: system || disabled, system, disabled, setDisabled };
+  return system;
 }
 
 /** One cancellable clock; all visual state is reconstructed from absolute time. */

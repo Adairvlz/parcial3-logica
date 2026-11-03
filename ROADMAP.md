@@ -12,7 +12,7 @@ Fases implementadas: 1, 1.5 y **2 — Motor semántico real**. La fase 3 no se h
 | 5 · Interpretation Studio          | Edición gráfica de dominio, funciones y relaciones                              | Validadores y motor           | Ediciones válidas recalculan resultados; errores se explican en contexto                                   |
 | 6 · Final polish                   | Rendimiento, accesibilidad, exportación y presentación                          | Integración completa          | Pruebas exhaustivas y demostración académica verificable                                                   |
 
-La reproducción, la cámara y la propagación visual ya existen para un fixture de siete nodos. En fase 3 se alimentarán desde trazas reales; en fase 4 se extenderán a secuencias arbitrarias, agrupación, contracción y escalabilidad. El escenario sintético de 40 nodos es una prueba de visualización, no un evaluador ni una prueba de fórmulas mayores.
+La reproducción, la cámara y la propagación visual ya existen para un fixture de siete nodos. En fase 3 se alimentarán desde trazas reales; en fase 4 se extenderán a secuencias arbitrarias, agrupación, contracción y escalabilidad. `expandedLayout` y su fixture sintético de 40 nodos siguen en `organicLayout.ts`, cubiertos por pruebas de geometría, como base del layout de fase 3; ya no tienen entrada en la interfaz.
 
 ## Alcance de fase 2 implementado
 
@@ -27,7 +27,7 @@ La reproducción, la cámara y la propagación visual ya existen para un fixture
 
 Criterio de salida: resultados reproducibles, todas las validaciones obligatorias cubiertas y ninguna lógica matemática ad hoc dentro de componentes React. No retirar la etiqueta DEMO de una traza hasta que provenga efectivamente del motor.
 
-Decisiones adoptadas: no incluir igualdad ni alias ASCII; cuantificadores de alcance amplio hasta el cierre de paréntesis; implicación asociativa a la derecha; relaciones no vacías también para aridad cero; límites operativos explícitos sin resultados parciales. Gramática y ejemplos en `SEMANTICS.md`.
+Decisiones adoptadas: igualdad entre términos y alias de teclado; cuantificadores que abarcan solo la fórmula inmediata, como en la notación del curso; implicación asociativa a la derecha; relaciones no vacías también para aridad cero; límites operativos explícitos sin resultados parciales. Gramática y ejemplos en `SEMANTICS.md`.
 
 ## Próxima fase: 3 — Reasoning Tree Engine
 
