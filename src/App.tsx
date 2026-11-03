@@ -61,7 +61,9 @@ export function App() {
               <GitBranch size={14} /> Árbol
             </a>
           </nav>
-          <span className="course-label">MM3032 · Lógica Matemática</span>
+          <span className="course-label">
+            MM3032 · Lógica Matemática · Diego Quan y Adair Velásquez
+          </span>
         </header>
       )}
       <main id="main-content" tabIndex={-1} className="living-stage">

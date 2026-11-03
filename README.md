@@ -2,6 +2,8 @@
 
 **No solo evalúes la lógica. Observa cómo razona.**
 
+Curso: MM3032 Lógica Matemática. Integrantes: Diego Quan y Adair Velásquez.
+
 Aplicación frontend para MM3032 — Lógica Matemática. La **fase 2 incluye un motor semántico real**, con parser, validación y evaluación determinista de fórmulas de primer orden sobre interpretaciones finitas. Se conserva el **Organic Luminous Reasoning Tree** de fase 1.5 como demostración animada independiente. La conexión de árboles arbitrarios al motor pertenece a fase 3.
 
 ## Ejecutar
