@@ -8,7 +8,7 @@ import type {
   TermAST,
 } from "./types";
 
-export const EVALUATION_BUDGET = 10000;
+export const EVALUATION_BUDGET = 250000;
 export interface EvaluationRequest {
   formula: string;
   language: unknown;
@@ -120,8 +120,23 @@ export function evaluateRequest(request: EvaluationRequest): EvaluationOutcome {
       evidence.explanation = `La tupla (${args.join(", ")}) ${evidence.value ? "pertenece" : "no pertenece"} a ${node.name}ᴵ.`;
       return evidence;
     }
+    if (node.kind === "equals") {
+      const left = term(node.left, environment);
+      const right = term(node.right, environment);
+      const source = (t: TermAST) =>
+        request.formula.slice(t.range.start, t.range.end);
+      evidence.terms = [
+        { expression: source(node.left), value: left },
+        { expression: source(node.right), value: right },
+      ];
+      evidence.value = left === right;
+      evidence.rule = "Igualdad";
+      evidence.explanation = `${source(node.left)} vale ${left} y ${source(node.right)} vale ${right}: ${evidence.value ? "son el mismo elemento" : "son elementos distintos"} de D.`;
+      return evidence;
+    }
     if (node.kind === "not") {
       const child = walk(node.operand, environment);
+      child.decisive = true;
       evidence.children = [child];
       evidence.value = !child.value;
       evidence.rule = "Negación";
@@ -133,6 +148,7 @@ export function evaluateRequest(request: EvaluationRequest): EvaluationOutcome {
       evidence.rule = universal
         ? "Cuantificador universal"
         : "Cuantificador existencial";
+      evidence.variable = node.variable;
       evidence.checked = 0;
       for (const element of domain) {
         const next = new Map(environment);
@@ -141,12 +157,14 @@ export function evaluateRequest(request: EvaluationRequest): EvaluationOutcome {
         evidence.children.push(child);
         evidence.checked++;
         if (universal && !child.value) {
+          child.decisive = true;
           evidence.value = false;
           evidence.counterexample = { variable: node.variable, value: element };
           evidence.explanation = `Contraejemplo: ${node.variable} = ${element} hace falso el cuerpo.`;
           return evidence;
         }
         if (!universal && child.value) {
+          child.decisive = true;
           evidence.value = true;
           evidence.witness = { variable: node.variable, value: element };
           evidence.explanation = `Testigo: ${node.variable} = ${element} hace verdadero el cuerpo.`;
@@ -173,6 +191,7 @@ export function evaluateRequest(request: EvaluationRequest): EvaluationOutcome {
     };
     evidence.rule = names[node.kind];
     if (short) {
+      left.decisive = true;
       evidence.value = node.kind !== "and";
       evidence.skipped =
         "El segundo operando se omite por cortocircuito; su sintaxis y sus símbolos ya fueron validados.";
@@ -194,6 +213,12 @@ export function evaluateRequest(request: EvaluationRequest): EvaluationOutcome {
           : node.kind === "implies"
             ? !left.value || right.value
             : left.value === right.value;
+    // Past the short circuit the right operand always matters; the left one
+    // matters too unless the right operand alone settled ∧ false, ∨ or → true.
+    right.decisive = true;
+    left.decisive =
+      node.kind === "iff" ||
+      (node.kind === "and" ? evidence.value : !evidence.value);
     evidence.explanation = `Operandos: ${left.value ? "V" : "F"} y ${right.value ? "V" : "F"}. ${evidence.rule}: ${evidence.value ? "verdadera" : "falsa"}.`;
     return evidence;
   }

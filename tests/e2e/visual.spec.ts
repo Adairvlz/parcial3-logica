@@ -11,21 +11,21 @@ test("visual review of organic scene, intermediate propagation and mobile", asyn
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto("/");
+  await page.goto("/#/laboratory");
   await page.waitForTimeout(1400);
-  await expect(page.locator(".orb-core")).toHaveCount(7);
+  await expect(page.locator(".orb-core")).toHaveCount(10);
   await page.screenshot({ path: "test-results/organic-desktop.png" });
-  await page.locator('[data-id="atom-b"]').click();
+  await page.locator('[data-id="r.1.2"]').click();
   await page.waitForTimeout(300);
   await page.screenshot({ path: "test-results/organic-inspector.png" });
   await page.getByRole("button", { name: "Cerrar inspector" }).click();
   await page
     .getByRole("slider", { name: "Tiempo de reproducción" })
-    .fill("15600");
+    .fill("16000");
   await page.screenshot({ path: "test-results/organic-propagation.png" });
   await page
     .getByRole("slider", { name: "Tiempo de reproducción" })
-    .fill("21600");
+    .fill("19700");
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.waitForTimeout(1200);
   await page.screenshot({ path: "test-results/organic-1920.png" });
@@ -38,10 +38,10 @@ test("visual review of organic scene, intermediate propagation and mobile", asyn
 test("record a continuous demonstration including branch growth and return pulses", async ({
   page,
 }) => {
-  test.setTimeout(35000);
+  test.setTimeout(45000);
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Animar demo" }).click();
+  await page.goto("/#/laboratory");
+  await page.getByRole("button", { name: "Animar razonamiento" }).click();
   await page.waitForTimeout(3000);
   await page.screenshot({ path: "test-results/organic-growing.png" });
   await expect(page.locator(".timeline")).toHaveAttribute("data-step", "3", {
@@ -52,7 +52,7 @@ test("record a continuous demonstration including branch growth and return pulse
   await expect(page.locator(".timeline")).toHaveAttribute(
     "data-playing",
     "false",
-    { timeout: 17000 },
+    { timeout: 26000 },
   );
   await expect(page.locator(".organic-node.state-true")).toHaveCount(7);
   await page.screenshot({ path: "test-results/organic-completed.png" });

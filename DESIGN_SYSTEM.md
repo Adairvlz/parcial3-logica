@@ -4,7 +4,7 @@
 
 Un árbol matemáticamente jerárquico con apariencia orgánica: núcleos circulares suspendidos, ramas Bézier, halos y profundidad 2.5D. El canvas define la composición. No se dibujan conexiones decorativas entre nodos; cada arista corresponde a una dependencia del fixture.
 
-Tres capas: atmósfera tenue, estructura lógica luminosa e interfaz contextual flotante. La barra superior mide 60 px y la navegación 60 px; el modo inmersivo retira ambas. Editor, inspector, configuración y menú son superpuestos y ocultables. El área de canvas ocupa aproximadamente el 89 % de una pantalla de 1366×768 en modo normal y el 100 % en modo inmersivo, con controles superpuestos.
+Tres capas: atmósfera tenue, estructura lógica luminosa e interfaz contextual flotante. La barra superior mide 60 px y contiene las dos pestañas; el modo inmersivo la retira. El inspector es superpuesto y se abre al seleccionar un nodo. El canvas ocupa todo el ancho bajo la barra y el 100 % de la pantalla en modo inmersivo, con controles superpuestos.
 
 ## Colores y significado
 
@@ -50,8 +50,12 @@ En pantallas pequeñas, el árbol usa composición más estrecha, la timeline oc
 
 ## Vista de evaluación real · fase 2
 
-El acceso Evaluar abre una vista de trabajo diferenciada del canvas DEMO. Reutiliza la paleta oscura, la notación monoespaciada y la botonera de fórmulas; agrupa dominio, declaraciones y tablas en un formulario. La evidencia aparece a la derecha en escritorio y debajo en móvil. Al evaluar se encuadra el resultado o la sección de asignaciones pendientes.
+La pestaña Evaluador es una vista de trabajo diferenciada del canvas. Reutiliza la paleta oscura, la notación monoespaciada y la botonera de fórmulas; agrupa dominio, declaraciones y tablas en un formulario. La evidencia aparece a la derecha en escritorio y debajo en móvil. Al evaluar se encuadra el resultado o la sección de asignaciones pendientes.
 
 `MOTOR REAL` identifica un valor calculado. Verde significa verdadero, coral falso, y ámbar corresponde a entrada inválida o cálculo pendiente, sin valor de verdad. Las filas desplegables muestran V/F, fórmula y entorno; al abrirlas revelan la regla, los casos comprobados, sustituciones y razones decisivas. Cada edición elimina el resultado anterior. Los errores de fórmula permiten seleccionar su posición exacta en el editor.
 
-El modelo editable tiene su propio estado; no cambia la interpretación del ejemplo animado. Al volver se indica explícitamente Árbol DEMO. La edición gráfica avanzada de interpretaciones y la visualización de trazas arbitrarias siguen en fases posteriores.
+Toda edición del modelo o de la fórmula retira el resultado y su árbol. La edición gráfica avanzada de interpretaciones queda para la fase 5.
+
+## Fase 3: resultados en el árbol
+
+El color del núcleo sigue indicando la operación: violeta ∀, azul ∃, azul grisáceo los conectivos y turquesa las fórmulas atómicas. El resultado se comunica aparte: indicador ✓ o ×, y en un falso, borde y fórmula en coral. El anillo exterior marca el testigo (turquesa) y el contraejemplo (coral), y su etiqueta sustituye al tipo del nodo. Las ramas no decisivas son más tenues. El botón `−` colapsa una rama y `+N` la vuelve a abrir.

@@ -14,6 +14,7 @@ export interface ModelDraft {
   domain: string;
   symbols: SymbolDraft[];
 }
+export const EXAMPLE_FORMULA = "∀x ∃y P(x,y)";
 export const initialModel: ModelDraft = {
   domain: "a, b, c",
   symbols: [

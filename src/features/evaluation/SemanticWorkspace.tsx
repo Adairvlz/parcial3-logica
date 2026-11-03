@@ -1,19 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft,
   Check,
   ChevronDown,
   CircleAlert,
   FlaskConical,
+  GitBranch,
   Plus,
   Play,
   Trash2,
+  X,
 } from "lucide-react";
 import { FormulaEditor } from "../editor/FormulaEditor";
 import { evaluateRequest } from "../../core/evaluator";
-import type { EvaluationOutcome, Evidence } from "../../core/types";
-import { initialModel, readModelDraft, type ModelDraft } from "./modelEditor";
-import { DEMO_FORMULA } from "../demo/scenario";
+import type {
+  EvaluationOutcome,
+  Evidence,
+  Interpretation,
+} from "../../core/types";
+import type { Evaluation } from "../laboratory/ReasoningView";
+import {
+  EXAMPLE_FORMULA,
+  initialModel,
+  readModelDraft,
+  type ModelDraft,
+} from "./modelEditor";
 import "./semantic.css";
 
 interface SavedState {
@@ -21,33 +31,68 @@ interface SavedState {
   assignment: Record<string, string>;
   variables: string[];
 }
+function evaluateDraft(
+  draft: ModelDraft,
+  formula: string,
+  assignment: Record<string, string>,
+): { outcome: EvaluationOutcome; interpretation?: Interpretation } {
+  const model = readModelDraft(draft);
+  if (!model.valid)
+    return { outcome: { status: "invalid", errors: model.errors } };
+  return {
+    outcome: evaluateRequest({
+      formula,
+      language: model.language,
+      interpretation: model.interpretation,
+      assignment,
+    }),
+    interpretation: model.interpretation,
+  };
+}
 export function SemanticWorkspace({
   formula,
   onChange,
-  onClose,
   visible,
+  onResult,
+  onShowTree,
 }: {
   formula: string;
   onChange: (text: string) => void;
-  onClose: () => void;
   visible: boolean;
+  onResult: (evaluation: Evaluation | null) => void;
+  onShowTree: () => void;
 }) {
   const [state, setState] = useState<SavedState>({
     model: structuredClone(initialModel),
     assignment: {},
     variables: [],
   });
-  const [outcome, setOutcome] = useState<EvaluationOutcome | null>(null);
-  useEffect(() => {
-    setOutcome(null);
-    setState((s) => ({ ...s, variables: [], assignment: {} }));
-  }, [formula]);
+  // The app opens with the example already evaluated, tree included.
+  const [result, setResult] = useState<ReturnType<typeof evaluateDraft> | null>(
+    () => evaluateDraft(initialModel, formula, {}),
+  );
+  const outcome = result?.outcome ?? null;
+  const evaluationId = useRef(0);
   const nextId = useRef(2);
+  const scrollToResult = useRef(false);
   const formRef = useRef<HTMLTextAreaElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
   const assignmentRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (!outcome) return;
+    onResult(
+      outcome?.status === "evaluated" && result?.interpretation
+        ? {
+            id: ++evaluationId.current,
+            formula,
+            evidence: outcome.evidence,
+            interpretation: result.interpretation,
+          }
+        : null,
+    );
+  }, [result]);
+  useEffect(() => {
+    if (!outcome || !scrollToResult.current) return;
+    scrollToResult.current = false;
     const animation = requestAnimationFrame(() => {
       const target =
         outcome.status === "needs-assignment"
@@ -57,7 +102,7 @@ export function SemanticWorkspace({
     });
     return () => cancelAnimationFrame(animation);
   }, [outcome]);
-  const invalidate = () => setOutcome(null);
+  const invalidate = () => setResult(null);
   const updateModel = (model: ModelDraft) => {
     setState({ model, assignment: {}, variables: [] });
     invalidate();
@@ -68,7 +113,7 @@ export function SemanticWorkspace({
     invalidate();
   };
   const reset = () => {
-    onChange(DEMO_FORMULA);
+    onChange(EXAMPLE_FORMULA);
     setState({
       model: structuredClone(initialModel),
       assignment: {},
@@ -77,20 +122,12 @@ export function SemanticWorkspace({
     invalidate();
   };
   const run = () => {
-    const model = readModelDraft(state.model);
-    if (!model.valid) {
-      setOutcome({ status: "invalid", errors: model.errors });
-      return;
-    }
-    const result = evaluateRequest({
-      formula,
-      language: model.language,
-      interpretation: model.interpretation,
-      assignment: state.assignment,
-    });
-    if (result.status === "needs-assignment")
-      setState((s) => ({ ...s, variables: result.variables }));
-    setOutcome(result);
+    const next = evaluateDraft(state.model, formula, state.assignment);
+    const { outcome } = next;
+    if (outcome.status === "needs-assignment")
+      setState((s) => ({ ...s, variables: outcome.variables }));
+    scrollToResult.current = true;
+    setResult(next);
   };
   const symbolChange = (
     id: number,
@@ -109,21 +146,6 @@ export function SemanticWorkspace({
       aria-label="Evaluador semántico"
       hidden={!visible}
     >
-      <header className="semantic-heading">
-        <div>
-          <span className="eyebrow">
-            <FlaskConical size={13} /> FASE 02 · MOTOR DETERMINISTA
-          </span>
-          <h1>Del símbolo al significado.</h1>
-          <p>
-            Define un universo finito. Evalúa una fórmula. Revisa su
-            justificación.
-          </p>
-        </div>
-        <button className="secondary-button" onClick={onClose}>
-          <ArrowLeft size={14} /> Volver al árbol DEMO
-        </button>
-      </header>
       <div className="semantic-layout">
         <div className="semantic-inputs">
           <section className="semantic-card">
@@ -266,9 +288,7 @@ export function SemanticWorkspace({
               <FormulaEditor
                 formula={formula}
                 onChange={updateFormula}
-                isDemo={false}
                 onReset={reset}
-                mode="semantic"
               />
             </div>
             <details className="grammar-help">
@@ -277,15 +297,16 @@ export function SemanticWorkspace({
                 <ChevronDown size={13} />
               </summary>
               <p>
-                Precedencia: ¬, ∧, ∨, →, ↔. La implicación se asocia a la
-                derecha. ∀x y ∃x abarcan la expresión siguiente hasta el cierre
-                de paréntesis: ∀x P(x) → Q(x) significa ∀x (P(x) → Q(x)). Usa
-                (∀x P(x)) → Q(x) para dejar libre la segunda x.
+                Precedencia: ¬, ∀ y ∃, luego ∧, ∨, →, ↔. La implicación se asocia
+                a la derecha. ∀x y ∃x abarcan solo lo inmediato: ∀x P(x) → Q(x)
+                significa (∀x P(x)) → Q(x) y deja libre la segunda x. Usa
+                ∀x (P(x) → Q(x)) para ligarla.
               </p>
               <p>
-                Se admite un punto opcional: ∀x. P(x). Las constantes son
-                funciones de aridad cero, escritas c o c(). No se admiten
-                igualdad ni alias ASCII en esta versión.
+                Desde el teclado: ~ para ¬, &amp; para ∧, | para ∨, -&gt; para →,
+                &lt;-&gt; para ↔, forall para ∀ y exists para ∃. La igualdad se
+                escribe t = s entre términos. Las constantes son funciones de
+                aridad cero, escritas c o c().
               </p>
             </details>
           </section>
@@ -332,7 +353,6 @@ export function SemanticWorkspace({
             <button className="primary-button" onClick={run}>
               <Play size={14} /> Evaluar fórmula
             </button>
-            <span>Evaluación local · sin IA · sin backend</span>
           </div>
         </div>
         <aside className="semantic-results" aria-live="polite">
@@ -402,7 +422,7 @@ export function SemanticWorkspace({
                 <div
                   className={`engine-truth ${outcome.value ? "true" : "false"}`}
                 >
-                  <Check size={24} />
+                  {outcome.value ? <Check size={24} /> : <X size={24} />}
                   <h2>{outcome.value ? "Verdadero" : "Falso"}</h2>
                   <span>MOTOR REAL</span>
                 </div>
@@ -418,28 +438,12 @@ export function SemanticWorkspace({
                   <span>{outcome.operations} operaciones</span>
                 </div>
                 <h3 className="evidence-heading">Justificación verificable</h3>
+                <button className="primary-button tree-link" onClick={onShowTree}>
+                  <GitBranch size={14} /> Ver razonamiento en el árbol
+                </button>
                 <EvidenceView evidence={outcome.evidence} root />
-                <p className="semantic-boundary">
-                  Este resultado corresponde a tus entradas actuales. El árbol
-                  luminoso de siete nodos sigue siendo una demostración
-                  independiente; los árboles de evaluación arbitrarios llegarán
-                  en fase 3.
-                </p>
               </>
             )}
-          </div>
-          <div className="semantic-card model-notes">
-            <h3>Condiciones del modelo</h3>
-            <p>
-              Dominio no vacío. Todas las funciones son totales. Todas las
-              relaciones tienen al menos una tupla, pero no necesitan contener
-              todas las tuplas posibles.
-            </p>
-            <p>
-              Un error de sintaxis, aridad, tabla o asignación impide evaluar.
-              Un resultado falso es una fórmula válida bajo una interpretación
-              válida.
-            </p>
           </div>
         </aside>
       </div>
@@ -454,7 +458,7 @@ function EvidenceView({
   evidence: Evidence;
   root?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(root);
+  const [expanded, setExpanded] = useState(root || Boolean(e.decisive));
   return (
     <div className={`evidence ${e.value ? "true" : "false"}`}>
       <button

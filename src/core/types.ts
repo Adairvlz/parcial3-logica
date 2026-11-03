@@ -39,6 +39,7 @@ export type TermAST =
   | { kind: "function"; name: string; args: TermAST[]; range: SourceRange };
 export type FormulaAST =
   | { kind: "predicate"; name: string; args: TermAST[]; range: SourceRange }
+  | { kind: "equals"; left: TermAST; right: TermAST; range: SourceRange }
   | { kind: "not"; operand: FormulaAST; range: SourceRange }
   | {
       kind: "and" | "or" | "implies" | "iff";
@@ -57,6 +58,10 @@ export interface Evidence {
   environment: Record<string, string>;
   explanation: string;
   children: Evidence[];
+  /** Bound variable of a quantifier; each child fixes it to one element. */
+  variable?: string;
+  /** The parent's value depends on this child; set by the evaluator. */
+  decisive?: boolean;
   witness?: { variable: string; value: string };
   counterexample?: { variable: string; value: string };
   checked?: number;

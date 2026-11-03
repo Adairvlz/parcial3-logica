@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
-import { DEMO_FORMULA } from "../features/demo/scenario";
-export type Page = "dashboard" | "laboratory" | "editor" | "evaluate";
-const pageFromHash = (): Page => {
-  const value = window.location.hash.slice(2);
-  return value === "dashboard" || value === "editor" || value === "evaluate"
-    ? value
-    : "laboratory";
-};
+import { EXAMPLE_FORMULA } from "../features/evaluation/modelEditor";
+export type Page = "evaluate" | "laboratory";
+const pageFromHash = (): Page =>
+  window.location.hash.slice(2) === "laboratory" ? "laboratory" : "evaluate";
 export function useWorkspace() {
   const [page, setPage] = useState<Page>(pageFromHash);
-  const [formula, setFormula] = useState(DEMO_FORMULA);
-  const [selectedId, selectNode] = useState("");
+  const [formula, setFormula] = useState(EXAMPLE_FORMULA);
   useEffect(() => {
     const change = () => setPage(pageFromHash());
     window.addEventListener("hashchange", change);
@@ -20,15 +15,8 @@ export function useWorkspace() {
     page,
     formula,
     setFormula,
-    selectedId,
-    selectNode,
-    isDemo: formula === DEMO_FORMULA,
     navigate: (next: Page) => {
       window.location.hash = `/${next}`;
-    },
-    reset: () => {
-      setFormula(DEMO_FORMULA);
-      selectNode("root");
     },
   };
 }

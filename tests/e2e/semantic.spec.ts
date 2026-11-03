@@ -8,10 +8,8 @@ test("evaluates the original example with real evidence and isolates the demo", 
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Evaluar", exact: true }).click();
-  await expect(page).toHaveURL(/#\/evaluate$/);
   await expect(page.locator(".semantic-workspace")).toBeVisible();
-  await expect(page.locator(".demo-workspace")).toBeHidden();
+  await expect(page.locator(".tree-workspace")).toBeHidden();
   await evaluate(page);
   await expect(page.locator(".engine-truth")).toContainText("Verdadero");
   await expect(page.locator(".engine-truth")).toContainText("MOTOR REAL");
@@ -22,10 +20,8 @@ test("evaluates the original example with real evidence and isolates the demo", 
   await expect(page.locator(".evidence-finding").first()).toContainText(
     "Testigo: y = b",
   );
-  await page
-    .getByRole("button", { name: "Volver al árbol DEMO", exact: true })
-    .click();
-  await expect(page.locator(".demo-workspace")).toBeVisible();
+  await page.getByRole("link", { name: "Árbol", exact: true }).click();
+  await expect(page.locator(".tree-workspace")).toBeVisible();
   await expect(page.locator(".semantic-workspace")).toBeHidden();
 });
 
@@ -84,6 +80,38 @@ test("detects free variables, requests assignments and preserves scope", async (
   await expect(page.locator(".engine-truth")).toContainText("Verdadero");
 });
 
+test("keyboard spellings, equality and course scope reach the engine through the UI", async ({
+  page,
+}) => {
+  await page.goto("/#/evaluate");
+  await formula(page).fill("forall x exists y ~x = y");
+  await evaluate(page);
+  await expect(page.locator(".engine-truth")).toContainText("Verdadero");
+  await formula(page).fill("");
+  await page.getByRole("button", { name: "Insertar ∀" }).click();
+  await page.getByRole("button", { name: "Insertar =" }).click();
+  await expect(formula(page)).toHaveValue("∀=");
+  // The quantifier stops at → in the course notation, so the last x is free.
+  await formula(page).fill("∀x P(x,x) → P(x,x)");
+  await evaluate(page);
+  await expect(
+    page.getByRole("combobox", { name: "Asignación de x" }),
+  ).toBeVisible();
+});
+
+test("a false result opens its decisive branch down to the counterexample", async ({
+  page,
+}) => {
+  await page.goto("/#/evaluate");
+  await formula(page).fill("∀x ∀y P(x,y)");
+  await evaluate(page);
+  await expect(page.locator(".engine-truth")).toContainText("Falso");
+  await expect(page.locator(".evidence-finding")).toHaveText([
+    "Contraejemplo: x = a",
+    "Contraejemplo: y = a",
+  ]);
+});
+
 test("configures functions and constants, rejects incomplete and contradictory tables", async ({
   page,
 }) => {
@@ -126,7 +154,7 @@ test("syntax diagnostics select the offending source and inputs survive navigati
   page,
 }) => {
   await page.goto("/#/evaluate");
-  await formula(page).fill("P(x,y) & P(y,x)");
+  await formula(page).fill("P(x,y) # P(y,x)");
   await evaluate(page);
   await page.getByRole("button", { name: /Seleccionar posición/ }).click();
   await expect(formula(page)).toBeFocused();
@@ -134,16 +162,14 @@ test("syntax diagnostics select the offending source and inputs survive navigati
     await formula(page).evaluate((el: HTMLTextAreaElement) =>
       el.value.slice(el.selectionStart, el.selectionEnd),
     ),
-  ).toBe("&");
+  ).toBe("#");
   await page.getByRole("textbox", { name: "Dominio finito" }).fill("a, b");
-  await page
-    .getByRole("button", { name: "Volver al árbol DEMO", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Evaluar", exact: true }).click();
+  await page.getByRole("link", { name: "Árbol", exact: true }).click();
+  await page.getByRole("link", { name: "Evaluador", exact: true }).click();
   await expect(
     page.getByRole("textbox", { name: "Dominio finito" }),
   ).toHaveValue("a, b");
-  await expect(formula(page)).toHaveValue("P(x,y) & P(y,x)");
+  await expect(formula(page)).toHaveValue("P(x,y) # P(y,x)");
 });
 
 test("semantic workspace remains usable at desktop and mobile sizes without runtime errors", async ({
