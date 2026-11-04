@@ -296,6 +296,7 @@ const nodeTypes = { organic: OrganicNode };
 const edgeTypes = { luminous: LuminousEdge };
 
 interface CameraProps {
+  cameraDuration: number;
   points: Record<string, Point>;
   focus: readonly string[];
   follow: boolean;
@@ -305,6 +306,7 @@ interface CameraProps {
   playing: boolean;
 }
 function Camera({
+  cameraDuration,
   points,
   focus,
   follow,
@@ -318,6 +320,10 @@ function Camera({
     height = useStore((state) => state.height);
   const zoom = useStore((state) => state.transform[2]);
   const raf = useRef(0);
+  const durationRef = useRef(cameraDuration);
+  useEffect(() => {
+    durationRef.current = cameraDuration;
+  }, [cameraDuration]);
   const manualMotion = useRef(false);
   const wasPlaying = useRef(playing);
   const previousFocus = useRef(focus);
@@ -334,7 +340,10 @@ function Camera({
       const start = getViewport(),
         began = performance.now();
       const tick = (now: number) => {
-        const t = reduced || instant ? 1 : ease((now - began) / 950);
+        const t =
+          reduced || instant
+            ? 1
+            : ease((now - began) / (manual ? 950 : durationRef.current));
         void setViewport({
           x: start.x + (target.x - start.x) * t,
           y: start.y + (target.y - start.y) * t,
@@ -355,7 +364,7 @@ function Camera({
       const top = Math.min(...visible.map((p) => p.y)) - 85,
         bottom = Math.max(...visible.map((p) => p.y)) + 125;
       const topSpace = width < 600 ? 150 : 110;
-      const bottomSpace = width < 600 ? 200 : 175;
+      const bottomSpace = width < 600 ? 240 : 215;
       const usableHeight = Math.max(180, height - topSpace - bottomSpace);
       const targetZoom = Math.min(
         1.18,
@@ -443,6 +452,7 @@ function Camera({
 }
 
 export interface CanvasProps {
+  cameraDuration: number;
   tree: VisibleTree;
   selectedId: string;
   onSelect: (id: string) => void;
@@ -462,6 +472,7 @@ export function ReasoningCanvas(props: CanvasProps) {
   );
 }
 function OrganicScene({
+  cameraDuration,
   tree,
   selectedId,
   onSelect,
@@ -509,26 +520,30 @@ function OrganicScene({
       const offset = points[n.id].x - points[n.parentId!].x;
       const bend = offset < 0 ? -0.65 : offset > 0 ? 0.8 : i % 2 ? -0.65 : 0.8;
       return {
-      id: `${n.parentId}-${n.id}`,
-      source: n.parentId!,
-      target: n.id,
-      type: "luminous" as const,
-      data: {
-        frame: frame.edges[n.id],
-        highlighted: path.includes(n.id),
-        dimmed: !!selectedId && !path.includes(n.id),
-        decisive: !!n.evidence.decisive,
-        color:
-          tree.byId.get(n.parentId!)!.evidence.kind === "forall"
-            ? "#af8dff"
-            : "#65d4ef",
-        endColor: n.evidence.value ? "#77ead3" : "#fb7185",
-        value: n.evidence.value,
-        bend,
-        assignment: n.edgeLabel,
-        reduced,
-      },
-      hidden: frame.edges[n.id].growth <= 0,
+        id: `${n.parentId}-${n.id}`,
+        source: n.parentId!,
+        target: n.id,
+        type: "luminous" as const,
+        data: {
+          frame: frame.edges[n.id],
+          highlighted: path.includes(n.id),
+          dimmed: !!selectedId && !path.includes(n.id),
+          decisive: frame.edges[n.id].reverse && !!n.evidence.decisive,
+          color:
+            tree.byId.get(n.parentId!)!.evidence.kind === "forall"
+              ? "#af8dff"
+              : "#65d4ef",
+          endColor: !frame.edges[n.id].reverse
+            ? "#69bfe8"
+            : n.evidence.value
+              ? "#77ead3"
+              : "#fb7185",
+          value: n.evidence.value,
+          bend,
+          assignment: n.edgeLabel,
+          reduced,
+        },
+        hidden: frame.edges[n.id].growth <= 0,
       };
     });
   return (
@@ -553,9 +568,7 @@ function OrganicScene({
         if (event.key !== "Enter" && event.key !== " ") return;
         const target = event.target as HTMLElement;
         if (target.tagName === "BUTTON") return;
-        const id = target
-          .closest(".react-flow__node")
-          ?.getAttribute("data-id");
+        const id = target.closest(".react-flow__node")?.getAttribute("data-id");
         if (id) {
           event.preventDefault();
           event.stopPropagation();
@@ -611,6 +624,7 @@ function OrganicScene({
         defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
       >
         <Camera
+          cameraDuration={cameraDuration}
           points={points}
           focus={focus}
           follow={follow}

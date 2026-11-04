@@ -1,6 +1,6 @@
 # Roadmap
 
-Fases implementadas: 1, 1.5, 2, **3 — Reasoning Tree Engine** y la reproducción de la fase 4.
+Fases implementadas: 1, 1.5, 2, 3 y **4 — Cinematic Reasoning**.
 
 | Fase                               | Objetivo                                                                        | Dependencia                   | Aceptación                                                                                                 |
 | ---------------------------------- | ------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |

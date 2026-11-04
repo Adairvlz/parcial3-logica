@@ -9,9 +9,19 @@ const twoDigits = (n: number) => String(n).padStart(2, "0");
 export function Timeline({
   playback: p,
   timeline,
+  follow,
+  onFollow,
+  reduced,
+  systemReduced,
+  onReduced,
 }: {
   playback: Playback;
   timeline: TimelineData;
+  follow: boolean;
+  onFollow: () => void;
+  reduced: boolean;
+  systemReduced: boolean;
+  onReduced: () => void;
 }) {
   const current = timeline.steps[p.step];
   return (
@@ -20,7 +30,44 @@ export function Timeline({
       aria-label="Reproducción del razonamiento"
       data-step={p.step}
       data-playing={p.playing}
+      data-event={current.kind}
+      data-node={current.nodeId}
     >
+      <div className="cinematic-tools">
+        <button aria-pressed={follow} onClick={onFollow}>
+          Seguir razonamiento
+        </button>
+        <button
+          aria-pressed={reduced}
+          disabled={systemReduced}
+          onClick={onReduced}
+          title={
+            systemReduced
+              ? "Activado por la preferencia del sistema"
+              : "Reducir movimiento"
+          }
+        >
+          Movimiento reducido
+        </button>
+        <select
+          aria-label="Ir a una decisión"
+          value=""
+          onChange={(event) => p.seek(Number(event.target.value))}
+        >
+          <option value="" disabled>
+            Ir a una decisión…
+          </option>
+          {timeline.steps.map((step, i) =>
+            step.finding || step.kind === "conclusion" ? (
+              <option key={i} value={timeline.starts[i]}>
+                {step.kind === "conclusion"
+                  ? "Conclusión"
+                  : `Paso ${i + 1} · ${step.kind === "resolve" ? "Decisión" : ""}`}
+              </option>
+            ) : null,
+          )}
+        </select>
+      </div>
       <div className="timeline-story" aria-live="polite">
         <span className="step-number">
           {twoDigits(p.step + 1)}
@@ -49,11 +96,7 @@ export function Timeline({
       />
       <div className="timeline-bottom">
         <div className="transport">
-          <button
-            aria-label="Reiniciar"
-            title="Reiniciar"
-            onClick={p.restart}
-          >
+          <button aria-label="Reiniciar" title="Reiniciar" onClick={p.restart}>
             <RotateCcw size={15} />
           </button>
           <button

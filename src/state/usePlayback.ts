@@ -20,6 +20,7 @@ export function usePlayback(timeline: Timeline) {
   const [time, setTime] = useState(duration);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [revision, setRevision] = useState(0);
   const timeRef = useRef(time);
   const generation = useRef(0);
   const seek = useCallback(
@@ -28,6 +29,7 @@ export function usePlayback(timeline: Timeline) {
       timeRef.current = clamp(next, 0, duration);
       setTime(timeRef.current);
       setPlaying(false);
+      setRevision((current) => current + 1);
     },
     [duration],
   );
@@ -59,7 +61,7 @@ export function usePlayback(timeline: Timeline) {
       generation.current++;
       cancelAnimationFrame(raf);
     };
-  }, [playing, speed, duration]);
+  }, [playing, speed, duration, revision]);
   const play = () => {
     if (timeRef.current >= duration) {
       timeRef.current = 0;

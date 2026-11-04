@@ -22,7 +22,10 @@ export interface Evaluation {
 
 const TUPLES_SHOWN = 4;
 const RELATIONS_SHOWN = 3;
-function relationSummary([name, tuples]: [string, readonly (readonly string[])[]]) {
+function relationSummary([name, tuples]: [
+  string,
+  readonly (readonly string[])[],
+]) {
   const shown = tuples.slice(0, TUPLES_SHOWN).map((t) => `(${t.join(",")})`);
   if (tuples.length > TUPLES_SHOWN) shown.push("…");
   return `${name} = {${shown.join(", ")}}`;
@@ -46,7 +49,9 @@ export function ReasoningView({
   const [selectedId, setSelectedId] = useState("");
   const [inspector, setInspector] = useState(false);
   const [follow, setFollow] = useState(false);
-  const reduced = useReducedMotion();
+  const systemReduced = useReducedMotion();
+  const [gentle, setGentle] = useState(false);
+  const reduced = systemReduced || gentle;
   const tree = useMemo(
     () => buildVisibleTree(evaluation.evidence, modes),
     [evaluation, modes],
@@ -102,6 +107,7 @@ export function ReasoningView({
         follow={follow}
         setFollow={setFollow}
         playing={p.playing}
+        cameraDuration={Math.min(950, (timeline.unit / p.speed) * 0.75)}
       />
       <div className="formula-dock glass">
         <span className="active-formula">
@@ -190,7 +196,15 @@ export function ReasoningView({
           </small>
         </div>
       </div>
-      <Timeline playback={p} timeline={timeline} />
+      <Timeline
+        playback={p}
+        timeline={timeline}
+        follow={follow}
+        onFollow={() => setFollow((current) => !current)}
+        reduced={reduced}
+        systemReduced={systemReduced}
+        onReduced={() => setGentle((current) => !current)}
+      />
     </>
   );
 }
