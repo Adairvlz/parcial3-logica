@@ -16,6 +16,14 @@ const MAX_UNIT = 1300;
 const FOLLOW_NODE_LIMIT = 15;
 
 export interface TimelineStep {
+  kind: "enter" | "resolve" | "conclusion";
+  nodeId: string;
+  finding?:
+    | "witness"
+    | "counterexample"
+    | "complete"
+    | "short-circuit"
+    | "summary";
   title: string;
   detail: string;
   duration: number;
@@ -63,6 +71,8 @@ export function compileTimeline(tree: VisibleTree): Timeline {
     };
     nodes.push(entry);
     steps.push({
+      kind: "enter",
+      nodeId: id,
       title: `Evaluamos ${n.label}`,
       detail: n.edgeLabel
         ? `Caso ${n.edgeLabel}. ${n.evidence.rule}.`
@@ -74,8 +84,29 @@ export function compileTimeline(tree: VisibleTree): Timeline {
     n.childIds.forEach(visit);
     entry.resolveAt = time;
     steps.push({
+      kind: "resolve",
+      nodeId: id,
+      finding: n.hiddenChildren
+        ? "summary"
+        : n.evidence.witness
+          ? "witness"
+          : n.evidence.counterexample
+            ? "counterexample"
+            : n.evidence.skipped
+              ? "short-circuit"
+              : n.evidence.checked !== undefined
+                ? "complete"
+                : undefined,
       title: `${n.label}: ${truth(n.evidence.value)}`,
-      detail: n.evidence.explanation,
+      detail: [
+        n.evidence.explanation,
+        n.hiddenChildren
+          ? `${n.hiddenChildren} ramas evaluadas están plegadas; este paso resume su resultado.`
+          : "",
+        n.evidence.skipped ?? "",
+      ]
+        .filter(Boolean)
+        .join(" "),
       duration: unit,
       focus: near(id, n.parentId),
     });
@@ -84,6 +115,8 @@ export function compileTimeline(tree: VisibleTree): Timeline {
   visit(tree.root.id);
   const closing = Math.max(unit, 1500);
   steps.push({
+    kind: "conclusion",
+    nodeId: tree.root.id,
     title: `Conclusión: ${truth(tree.root.evidence.value)}`,
     detail: tree.root.evidence.explanation,
     duration: closing,

@@ -193,6 +193,38 @@ describe("Playback compiled from the tree", () => {
     expect(frame.nodes["r.0"].state).toBe("pending");
     expect(frame.result).toBe(false);
   });
+  it("identifies semantic decisions and links every event to its evidence", () => {
+    for (const step of timeline.steps)
+      expect(tree.byId.has(step.nodeId)).toBe(true);
+    expect(
+      timeline.steps
+        .filter((s) => s.finding === "witness")
+        .map((s) => s.nodeId),
+    ).toEqual(["r.0", "r.1", "r.2"]);
+    expect(
+      timeline.steps.find((s) => s.nodeId === "r" && s.kind === "resolve")
+        ?.finding,
+    ).toBe("complete");
+    const falseLine = compileTimeline(treeOf("∀x Q(x)"));
+    expect(
+      falseLine.steps.find((s) => s.finding === "counterexample")?.nodeId,
+    ).toBe("r");
+    const skipped = compileTimeline(treeOf("∃x P(x,x) ∧ ∀x Q(x)"));
+    expect(
+      skipped.steps.find((s) => s.finding === "short-circuit")?.detail,
+    ).toContain(skipped.steps.at(-1)!.detail);
+  });
+  it("announces folded evidence as a summary without fabricating visible events", () => {
+    const folded = treeOf("∀x ∃y P(x,y)", { "r.0": "none" });
+    const line = compileTimeline(folded);
+    const summary = line.steps.find(
+      (s) => s.nodeId === "r.0" && s.kind === "resolve",
+    )!;
+    expect(summary.finding).toBe("summary");
+    expect(summary.detail).toContain("2 ramas evaluadas están plegadas");
+    expect(line.steps.some((s) => s.nodeId.startsWith("r.0."))).toBe(false);
+    expect(frameAt(line, line.duration).nodes.r.state).toBe("true");
+  });
   it("resolves every node only after all of its children", () => {
     for (const n of tree.nodes)
       for (const child of n.childIds)

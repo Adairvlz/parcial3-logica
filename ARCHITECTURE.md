@@ -39,6 +39,10 @@ La cámara usa un RAF cancelable independiente para interpolar un viewport solic
 
 ## Geometría y rendimiento
 
+La fase 4 identifica cada paso con `kind` (enter, resolve, conclusion) y `nodeId`. Las resoluciones pueden señalar testigo, contraejemplo, comprobación completa, cortocircuito o resumen de ramas plegadas. Estos eventos permiten navegar a decisiones sin duplicar reglas semánticas. Los resúmenes explicitan las ramas ocultas; no se inventan eventos para ellas. Los colores de verdad de las conexiones y su énfasis decisivo solo aparecen tras resolver el hijo y se retiran al retroceder.
+
+La revisión del reloj cambia también al buscar un instante: pulsar Animar durante la reproducción cancela y sustituye el RAF aunque React agrupe pausa y reproducción en una sola actualización. El tiempo de transición de cámara sigue la velocidad y la duración del paso; cambiar velocidad no reactiva el seguimiento manualmente deshabilitado. El usuario puede recuperarlo y activar movimiento reducido desde la línea de tiempo.
+
 `organicLayout` recibe identificadores y padres y devuelve posiciones; no conoce valores. Reserva un intervalo por hoja, así los subárboles no se pisan, con cualquier forma de fórmula.
 
 Cada conexión tiene una curva Bézier cúbica, un trazo difuso y un filamento. `pathLength` permite crecimiento reproducible; la misma función cúbica posiciona los pulsos, sin consultas DOM de longitud en cada frame. Los hermanos se arquean en sentidos opuestos para no cruzarse.
