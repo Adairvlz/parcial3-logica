@@ -62,7 +62,7 @@ export function Timeline({
               <option key={i} value={timeline.starts[i]}>
                 {step.kind === "conclusion"
                   ? "Conclusión"
-                  : `Paso ${i + 1} · ${step.kind === "resolve" ? "Decisión" : ""}`}
+                  : `Paso ${i + 1} · ${step.subject}`}
               </option>
             ) : null,
           )}

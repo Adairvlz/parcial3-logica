@@ -19,11 +19,14 @@ import type {
 } from "../../core/types";
 import type { Evaluation } from "../laboratory/ReasoningView";
 import {
+  diagnosticLocation,
+  domainElements,
   EXAMPLE_FORMULA,
   initialModel,
   readModelDraft,
   type ModelDraft,
 } from "./modelEditor";
+import { InterpretationEditor } from "./InterpretationEditor";
 import "./semantic.css";
 
 interface SavedState {
@@ -139,7 +142,18 @@ export function SemanticWorkspace({
         s.id === id ? { ...s, ...patch } : s,
       ),
     });
-  const domain = readModelDraft(state.model);
+  // Switching between table and text does not change the model or its result.
+  const setView = (id: number, view: "grid" | "text") =>
+    setState((s) => ({
+      ...s,
+      model: {
+        ...s.model,
+        symbols: s.model.symbols.map((symbol) =>
+          symbol.id === id ? { ...symbol, view } : symbol,
+        ),
+      },
+    }));
+  const elements = domainElements(state.model.domain);
   return (
     <section
       className="semantic-workspace"
@@ -250,28 +264,13 @@ export function SemanticWorkspace({
                     <Trash2 size={15} />
                   </button>
                 </div>
-                <label className="table-editor">
-                  {symbol.category === "predicate"
-                    ? "Tuplas de la relación"
-                    : "Tabla total de la función"}
-                  <textarea
-                    aria-label={`Interpretación del símbolo ${index + 1}`}
-                    value={symbol.table}
-                    spellCheck={false}
-                    rows={Math.min(
-                      7,
-                      Math.max(3, symbol.table.split("\n").length),
-                    )}
-                    onChange={(e) =>
-                      symbolChange(symbol.id, { table: e.target.value })
-                    }
-                  />
-                </label>
-                <small>
-                  {symbol.category === "predicate"
-                    ? "Una tupla por línea: (a, b). La relación debe ser no vacía; () representa una tupla de aridad cero."
-                    : "Una fila por entrada: (a) -> b. Para aridad cero: () -> a. Debe existir una salida para cada entrada de Dⁿ."}
-                </small>
+                <InterpretationEditor
+                  symbol={symbol}
+                  index={index}
+                  domain={elements}
+                  onTable={(table) => symbolChange(symbol.id, { table })}
+                  onView={(view) => setView(symbol.id, view)}
+                />
               </fieldset>
             ))}
           </section>
@@ -337,12 +336,11 @@ export function SemanticWorkspace({
                       <option value="" disabled>
                         Selecciona un elemento
                       </option>
-                      {domain.valid &&
-                        domain.interpretation.domain.map((value, i) => (
-                          <option key={i} value={value}>
-                            {value}
-                          </option>
-                        ))}
+                      {elements.map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 ))}
@@ -377,7 +375,7 @@ export function SemanticWorkspace({
                 <ul className="diagnostics">
                   {outcome.errors.map((error, i) => (
                     <li key={i}>
-                      <strong>{error.path ?? "Fórmula"}</strong>
+                      <strong>{diagnosticLocation(error.path)}</strong>
                       <p>{error.message}</p>
                       {error.range && (
                         <button

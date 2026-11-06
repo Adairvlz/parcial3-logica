@@ -36,6 +36,9 @@ test("false is distinct from invalid and edits immediately clear results", async
     "no existe testigo",
   );
   await page
+    .getByRole("button", { name: "Editar el símbolo 1 como texto" })
+    .click();
+  await page
     .getByRole("textbox", { name: "Interpretación del símbolo 1" })
     .fill("");
   await expect(page.locator(".engine-truth")).toHaveCount(0);
@@ -122,6 +125,9 @@ test("configures functions and constants, rejects incomplete and contradictory t
     .selectOption("function");
   await page.getByRole("textbox", { name: "Nombre del símbolo 2" }).fill("f");
   await page
+    .getByRole("button", { name: "Editar el símbolo 2 como texto" })
+    .click();
+  await page
     .getByRole("textbox", { name: "Interpretación del símbolo 2" })
     .fill("(a) -> b\n(b) -> c\n(c) -> a");
   await page.getByRole("button", { name: "Añadir símbolo" }).click();
@@ -133,16 +139,25 @@ test("configures functions and constants, rejects incomplete and contradictory t
     .getByRole("spinbutton", { name: "Aridad del símbolo 3" })
     .fill("0");
   await page
+    .getByRole("button", { name: "Editar el símbolo 3 como texto" })
+    .click();
+  await page
     .getByRole("textbox", { name: "Interpretación del símbolo 3" })
     .fill("() -> a");
   await formula(page).fill("P(c, f(c))");
   await evaluate(page);
   await expect(page.locator(".engine-truth")).toContainText("Verdadero");
   await page
+    .getByRole("button", { name: "Editar el símbolo 2 como texto" })
+    .click();
+  await page
     .getByRole("textbox", { name: "Interpretación del símbolo 2" })
     .fill("(a) -> b");
   await evaluate(page);
   await expect(page.locator(".diagnostics")).toContainText("debe ser total");
+  await page
+    .getByRole("button", { name: "Editar el símbolo 2 como texto" })
+    .click();
   await page
     .getByRole("textbox", { name: "Interpretación del símbolo 2" })
     .fill("(a) -> b\n(a) -> c\n(b) -> c\n(c) -> a");
@@ -201,4 +216,78 @@ test("semantic workspace remains usable at desktop and mobile sizes without runt
     });
   }
   expect(errors).toEqual([]);
+});
+
+test("the relation table edits tuples and the result follows them", async ({
+  page,
+}) => {
+  await page.goto("/#/evaluate");
+  const cell = page.getByRole("checkbox", { name: "P(c, a)", exact: true });
+  await expect(cell).toBeChecked();
+  await expect(page.locator(".interpretation-editor small").first()).toContainText(
+    "3 de 9 tuplas marcadas",
+  );
+  await cell.uncheck();
+  await evaluate(page);
+  await expect(page.locator(".engine-truth")).toContainText("Falso");
+  await expect(page.locator(".engine-explanation")).toContainText("x = c");
+  await cell.check();
+  await page
+    .getByRole("button", { name: "Editar el símbolo 1 como texto" })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Interpretación del símbolo 1" }),
+  ).toHaveValue("(a, b)\n(b, c)\n(c, a)");
+  await page
+    .getByRole("button", { name: "Editar el símbolo 1 como tabla" })
+    .click();
+  await expect(cell).toBeChecked();
+});
+
+test("function selectors cover every input and totality is still enforced", async ({
+  page,
+}) => {
+  await page.goto("/#/evaluate");
+  await page.getByRole("button", { name: "Añadir símbolo" }).click();
+  await page
+    .getByRole("combobox", { name: "Tipo del símbolo 2" })
+    .selectOption("function");
+  await page.getByRole("textbox", { name: "Nombre del símbolo 2" }).fill("f");
+  await page.getByRole("combobox", { name: "f(a)", exact: true }).selectOption("b");
+  await formula(page).fill("∃x P(x, f(x))");
+  await evaluate(page);
+  await expect(page.locator(".diagnostics")).toContainText("Función f");
+  await expect(page.locator(".diagnostics")).toContainText("debe ser total");
+  await page.getByRole("combobox", { name: "f(b)", exact: true }).selectOption("c");
+  await page.getByRole("combobox", { name: "f(c)", exact: true }).selectOption("a");
+  await evaluate(page);
+  await expect(page.locator(".engine-truth")).toContainText("Verdadero");
+});
+
+test("shrinking the domain keeps stale tuples visible until they are removed", async ({
+  page,
+}) => {
+  await page.goto("/#/evaluate");
+  await page.getByRole("textbox", { name: "Dominio finito" }).fill("a, b");
+  await expect(page.locator(".foreign-rows")).toContainText(
+    "2 filas no encajan",
+  );
+  await evaluate(page);
+  await expect(page.locator(".diagnostics")).toContainText("Relación P, fila 2");
+  await expect(page.locator(".diagnostics")).toContainText("ajenos al dominio");
+  await page.getByRole("button", { name: "Quitarlas" }).click();
+  await expect(page.locator(".foreign-rows")).toHaveCount(0);
+  await evaluate(page);
+  await expect(page.locator(".engine-truth")).toContainText("Falso");
+});
+
+test("the decision menu names the node and case of each decision", async ({
+  page,
+}) => {
+  await page.goto("/#/laboratory");
+  const options = page
+    .getByRole("combobox", { name: "Ir a una decisión" })
+    .locator("option");
+  await expect(options.nth(1)).toHaveText(/∃y P\(x,y\), x = a/);
+  await expect(options.last()).toHaveText("Conclusión");
 });
