@@ -50,6 +50,10 @@ En **Evaluador**:
 
 En **Árbol**:
 
+- Ondas luminosas al contacto con cada esfera, sincronizadas con el audio; estelas suaves que siguen los pulsos en ambas direcciones; y una onda de cierre desde la raíz que resalta el resultado. Los efectos siguen el reloj de reproducción y se desactivan con movimiento reducido.
+
+- Activar el altavoz junto a **Animar** para escuchar un tono cristalino al llegar a cada esfera y un sonido tenue durante el recorrido de la luz. El volumen inicial es 35% y puede ajustarse o silenciarse. El audio se detiene al pausar, navegar o cambiar la evaluación; los saltos manuales no reproducen sonidos atrasados. Se inicia silenciado y se sintetiza localmente, sin descargas ni servicios externos.
+
 - Ver el árbol de la última evaluación; la app abre con el ejemplo `∀x ∃y P(x,y)` ya evaluado. **Ver razonamiento en el árbol**, en el resultado, lo abre y lo reproduce.
 - Reproducir la evaluación paso a paso, en el orden del motor: cada nodo se resuelve después de sus hijos.
 - Pausar, reiniciar, avanzar, retroceder, arrastrar la línea de tiempo y cambiar velocidad (0,5× a 2×).

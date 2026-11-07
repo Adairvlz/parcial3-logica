@@ -146,22 +146,44 @@ export function getStep(timeline: Timeline, time: number) {
 }
 
 export interface NodeFrame {
+  contact: number | null;
+  finale: number | null;
   appearance: number;
   state: ReasoningState;
   energy: number;
 }
 export interface EdgeFrame {
+  finale: number | null;
   growth: number;
   pulse: number | null;
   reverse: boolean;
 }
 export interface ReasoningFrame {
+  closing: number | null;
   time: number;
   step: number;
   nodes: Record<string, NodeFrame>;
   edges: Record<string, EdgeFrame>;
   result: boolean;
   complete: boolean;
+}
+
+/** Shared arrival clock for the audio and contact rings. */
+export function pulseJourneys(timeline: Timeline) {
+  return timeline.nodes
+    .filter((node) => node.parentId)
+    .flatMap((node) => [
+      {
+        target: node.id,
+        start: node.enterAt,
+        arrival: node.enterAt + timeline.unit * 0.9,
+      },
+      {
+        target: node.parentId!,
+        start: node.resolveAt,
+        arrival: node.resolveAt + timeline.unit,
+      },
+    ]);
 }
 
 /** Pure function of absolute time, so seeking never accumulates mutations. */
@@ -180,9 +202,30 @@ export function frameAt(
       : null;
   const nodes: Record<string, NodeFrame> = {};
   const edges: Record<string, EdgeFrame> = {};
+  const closingStart = timeline.starts[timeline.starts.length - 1];
+  const closingDuration = timeline.duration - closingStart;
+  const maxDepth = Math.max(
+    1,
+    ...timeline.nodes.map((n) => n.id.split(".").length - 1),
+  );
+  const waveStep = (closingDuration * 0.6) / maxDepth;
+  const arrivals = new Map<string, number>();
+  for (const journey of pulseJourneys(timeline)) {
+    if (journey.arrival <= time)
+      arrivals.set(
+        journey.target,
+        Math.max(arrivals.get(journey.target) ?? -Infinity, journey.arrival),
+      );
+  }
   for (const n of timeline.nodes) {
+    const depth = n.id.split(".").length - 1;
     const resolved = time >= n.resolveAt;
     nodes[n.id] = {
+      contact: travel(
+        arrivals.get(n.id) ?? Infinity,
+        Math.min(650, unit * 0.8),
+      ),
+      finale: travel(closingStart + depth * waveStep, closingDuration * 0.4),
       appearance: progress(n.enterAt + 0.35 * unit, 0.65 * unit),
       state: resolved
         ? n.value
@@ -195,12 +238,14 @@ export function frameAt(
     };
     if (n.parentId)
       edges[n.id] = {
+        finale: travel(closingStart + (depth - 1) * waveStep, waveStep),
         growth: progress(n.enterAt, 0.9 * unit),
         pulse: travel(n.resolveAt, unit) ?? travel(n.enterAt, 0.9 * unit),
         reverse: resolved,
       };
   }
   return {
+    closing: travel(closingStart, closingDuration),
     time,
     step: getStep(timeline, time),
     nodes,

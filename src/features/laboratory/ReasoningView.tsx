@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Expand, Play, Shrink, X } from "lucide-react";
+import { Check, Expand, Play, Shrink, X, Volume2, VolumeX } from "lucide-react";
 import type { Evidence, Interpretation } from "../../core/types";
 import { compileTimeline, frameAt } from "../../reasoning/playback";
 import {
@@ -9,6 +9,7 @@ import {
   type BranchModes,
 } from "../../reasoning/tree";
 import { usePlayback, useReducedMotion } from "../../state/usePlayback";
+import { useReasoningSound } from "../../state/useReasoningSound";
 import { ReasoningCanvas } from "../../visualization/ReasoningCanvas";
 import { Inspector } from "./Inspector";
 import { Timeline } from "./Timeline";
@@ -58,6 +59,7 @@ export function ReasoningView({
   );
   const timeline = useMemo(() => compileTimeline(tree), [tree]);
   const p = usePlayback(timeline);
+  const sound = useReasoningSound(timeline, p, visible);
   const frame = useMemo(
     () => frameAt(timeline, p.time, reduced),
     [timeline, p.time, reduced],
@@ -121,6 +123,46 @@ export function ReasoningView({
           <Play size={12} fill="currentColor" />
           <span>Animar</span>
         </button>
+        <div
+          className="sound-controls"
+          role="group"
+          aria-label="Sonido del razonamiento"
+        >
+          <button
+            className="sound-toggle"
+            onClick={() => void sound.toggle()}
+            aria-label={
+              sound.unavailable
+                ? "Audio no disponible"
+                : sound.enabled
+                  ? "Silenciar sonido"
+                  : "Activar sonido"
+            }
+            aria-pressed={sound.enabled}
+            disabled={sound.unavailable}
+            title={
+              sound.unavailable
+                ? "Este navegador no pudo iniciar el audio"
+                : sound.enabled
+                  ? "Silenciar sonido"
+                  : "Activar sonido"
+            }
+          >
+            {sound.enabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
+          {sound.enabled && (
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              aria-label="Volumen del sonido"
+              aria-valuetext={`${sound.volume}%`}
+              value={sound.volume}
+              onChange={(event) => sound.setVolume(Number(event.target.value))}
+            />
+          )}
+        </div>
       </div>
       <div className="scene-actions">
         <button
@@ -170,6 +212,15 @@ export function ReasoningView({
       </div>
       <div
         className={`result-beacon ${frame.result ? (value ? "resolved" : "refuted") : ""}`}
+        data-closing={frame.closing !== null}
+        style={
+          frame.closing === null
+            ? undefined
+            : {
+                filter: `drop-shadow(0 0 ${Math.sin(Math.PI * frame.closing) * 18}px ${value ? "#74f5c9" : "#fb7185"})`,
+                transform: `scale(${1 + Math.sin(Math.PI * frame.closing) * 0.04})`,
+              }
+        }
         role="status"
       >
         <span className="beacon-icon">
