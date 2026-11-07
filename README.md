@@ -42,7 +42,7 @@ La app tiene dos pestañas: **Evaluador**, que es la entrada, y **Árbol**.
 
 En **Evaluador**:
 
-- Declarar predicados, funciones y constantes (aridad cero), un dominio finito y sus tablas.
+- Declarar predicados, funciones y constantes (aridad cero) y un dominio finito. Las relaciones se marcan en una tabla de casillas (una matriz si la aridad es 2) y las funciones se completan con un selector por entrada. El botón **Texto** permite escribir las tuplas a mano.
 - Evaluar fórmulas abiertas y cerradas con ¬, ∧, ∨, →, ↔, ∀, ∃ e igualdad, con botones o desde el teclado (`~`, `&`, `|`, `->`, `<->`, `forall`, `exists`).
 - Asignar elementos del dominio a las variables libres detectadas.
 - Obtener verdadero/falso con una justificación desplegable, testigos, contraejemplos, entornos y sustituciones de términos.

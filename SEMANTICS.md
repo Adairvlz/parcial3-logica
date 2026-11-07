@@ -57,7 +57,9 @@ El dominio se recorre en el orden introducido por el usuario. El universal falso
 
 ## Formato de tablas en la interfaz
 
-Dominio: etiquetas separadas por comas. Relación: una tupla entre paréntesis por línea, por ejemplo `(a, b)`. Función: una fila por línea, por ejemplo `(a, b) -> c`; también se acepta `↦` como separador de la tabla. Este separador no es un alias de conectivo en las fórmulas. La notación de tablas no incluye escape de comas ni saltos de línea dentro de una etiqueta.
+La interfaz edita cada símbolo como **tabla** sobre Dⁿ (casillas para relaciones, un selector por entrada para funciones) o como **texto**; el texto es siempre la fuente y la tabla lo reescribe. Las filas que no encajan en la tabla (fuera del dominio, de otra aridad o repetidas) no se descartan: se muestran como aviso, conservan su error de validación y se quitan solo a pedido. La tabla se ofrece hasta 216 combinaciones de entrada; más allá queda el texto.
+
+Formato de texto. Dominio: etiquetas separadas por comas. Relación: una tupla entre paréntesis por línea, por ejemplo `(a, b)`. Función: una fila por línea, por ejemplo `(a, b) -> c`; también se acepta `↦` como separador de la tabla. Este separador no es un alias de conectivo en las fórmulas. La notación de tablas no incluye escape de comas ni saltos de línea dentro de una etiqueta.
 
 ## Límites operativos
 

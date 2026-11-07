@@ -24,6 +24,8 @@ export interface TimelineStep {
     | "complete"
     | "short-circuit"
     | "summary";
+  /** Names the node and its case without revealing the result. */
+  subject: string;
   title: string;
   detail: string;
   duration: number;
@@ -70,9 +72,11 @@ export function compileTimeline(tree: VisibleTree): Timeline {
       resolveAt: 0,
     };
     nodes.push(entry);
+    const subject = n.edgeLabel ? `${n.label}, ${n.edgeLabel}` : n.label;
     steps.push({
       kind: "enter",
       nodeId: id,
+      subject,
       title: `Evaluamos ${n.label}`,
       detail: n.edgeLabel
         ? `Caso ${n.edgeLabel}. ${n.evidence.rule}.`
@@ -86,6 +90,7 @@ export function compileTimeline(tree: VisibleTree): Timeline {
     steps.push({
       kind: "resolve",
       nodeId: id,
+      subject,
       finding: n.hiddenChildren
         ? "summary"
         : n.evidence.witness
@@ -117,6 +122,7 @@ export function compileTimeline(tree: VisibleTree): Timeline {
   steps.push({
     kind: "conclusion",
     nodeId: tree.root.id,
+    subject: tree.root.label,
     title: `Conclusión: ${truth(tree.root.evidence.value)}`,
     detail: tree.root.evidence.explanation,
     duration: closing,

@@ -1,6 +1,6 @@
 # Roadmap
 
-Fases implementadas: 1, 1.5, 2, 3 y **4 — Cinematic Reasoning**.
+Fases implementadas: 1 a 4 y **5 — Interpretation Studio** (edición gráfica de interpretaciones). Queda la fase 6: cierre.
 
 | Fase                               | Objetivo                                                                        | Dependencia                   | Aceptación                                                                                                 |
 | ---------------------------------- | ------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -29,6 +29,6 @@ Criterio de salida: resultados reproducibles, todas las validaciones obligatoria
 
 Decisiones adoptadas: igualdad entre términos y alias de teclado; cuantificadores que abarcan solo la fórmula inmediata, como en la notación del curso; implicación asociativa a la derecha; relaciones no vacías también para aridad cero; límites operativos explícitos sin resultados parciales. Gramática y ejemplos en `SEMANTICS.md`.
 
-## Próxima fase: 5 — Interpretation Studio
+## Próxima fase: 6 — Cierre
 
-Reemplazar las tablas de texto por edición gráfica de dominio, funciones y relaciones, en particular para las funciones, donde hoy hay que escribir todas las filas. Mantener `validateModel` como única fuente de validez.
+Cita APA del uso de IA, revisión final del README, guion de la demostración y preparación de la defensa.
