@@ -273,6 +273,34 @@ code {
 .evaluate-button:hover {
   background: #b1f1dc;
 }
+.sound-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-left: 8px;
+  border-left: 1px solid #34465d;
+}
+.sound-toggle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #91a6bf;
+}
+.sound-toggle[aria-pressed="true"] {
+  color: #99efd2;
+  background: #254b443d;
+}
+.sound-controls input {
+  width: 58px;
+  height: 24px;
+  margin: 0;
+  accent-color: #82dfc3;
+  cursor: pointer;
+}
+.formula-dock .active-formula { min-width: 0; }
 .scene-actions {
   display: flex;
   position: absolute;
@@ -569,6 +597,15 @@ code {
 .luminous-edge {
   transition: opacity 0.25s;
 }
+.contact-resonance {
+  border: 2px solid #cff8ff;
+  box-shadow: 0 0 12px #a7e9ff66, inset 0 0 8px #a7e9ff33;
+}
+.finale-resonance {
+  border-width: 2px;
+  box-shadow: 0 0 18px currentColor;
+}
+.closing-wave, .pulse-trail { pointer-events: none; }
 .branch-aura,
 .branch-filament {
   fill: none;

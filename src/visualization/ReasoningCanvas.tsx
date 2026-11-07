@@ -119,6 +119,24 @@ const OrganicNode = memo(function OrganicNode({
       <div className="orb-halo" />
       <div className="orb-orbit orbit-one" />
       <div className="orb-orbit orbit-two" />
+      {[
+        { progress: frame.contact, name: "contact-resonance" },
+        { progress: frame.finale, name: "finale-resonance" },
+      ].map(
+        ({ progress, name }) =>
+          !reduced &&
+          progress !== null && (
+            <div
+              key={name}
+              className={`energy-ring ${name}`}
+              aria-hidden="true"
+              style={{
+                transform: `translate(-50%,-50%) scale(${1 + progress * 1.7})`,
+                opacity: Math.min(1, progress * 8) * (1 - progress),
+              }}
+            />
+          ),
+      )}
       {!reduced && frame.energy > 0 && (
         <div
           className="energy-ring"
@@ -272,6 +290,22 @@ const LuminousEdge = memo(function LuminousEdge({
           className="edge-pulse"
           data-direction={frame.reverse ? "to-parent" : "to-child"}
         >
+          {Array.from({ length: 9 }, (_, i) => {
+            const behind = frame.pulse! - (i + 1) * 0.018;
+            if (behind < 0) return null;
+            const point = curve.point(frame.reverse ? 1 - behind : behind);
+            return (
+              <circle
+                key={i}
+                className="pulse-trail"
+                cx={point.x}
+                cy={point.y}
+                r={3.4 - i * 0.26}
+                fill={pulseColor}
+                opacity={0.32 * (1 - i / 9)}
+              />
+            );
+          })}
           <circle
             cx={pulse.x}
             cy={pulse.y}
@@ -288,6 +322,20 @@ const LuminousEdge = memo(function LuminousEdge({
           />
           <circle cx={pulse.x} cy={pulse.y} r={2.2} fill="#effffc" />
         </g>
+      )}
+      {!data.reduced && frame.finale !== null && (
+        <path
+          className="closing-wave"
+          d={curve.path}
+          pathLength={1}
+          stroke={returning}
+          strokeWidth={3}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray="0.16 1"
+          strokeDashoffset={0.16 - frame.finale * 1.16}
+          opacity={Math.sin(Math.PI * frame.finale) * 0.8}
+        />
       )}
     </g>
   );
