@@ -43,6 +43,8 @@ La app tiene dos pestañas: **Evaluador**, que es la entrada, y **Árbol**.
 En **Evaluador**:
 
 - Declarar predicados, funciones y constantes (aridad cero) y un dominio finito. Las relaciones se marcan en una tabla de casillas (una matriz si la aridad es 2) y las funciones se completan con un selector por entrada. El botón **Texto** permite escribir las tuplas a mano.
+- Cargar con un clic un **ejemplo de clase** (Entornos e Interpretaciones): lenguaje, interpretación, fórmula y entorno, con su referencia y el resultado de los apuntes.
+- Usar el **buscador de interpretaciones**: prueba todas las interpretaciones del lenguaje declarado con dominios de hasta 3 elementos y encuentra un contraejemplo (¿es válida?) o un modelo (¿es satisfacible?), que se carga en el editor con un clic. Si no encuentra nada lo dice así, sin afirmar validez: en lógica de primer orden la validez es indecidible (Church–Turing), y la app solo admite relaciones no vacías.
 - Evaluar fórmulas abiertas y cerradas con ¬, ∧, ∨, →, ↔, ∀, ∃ e igualdad, con botones o desde el teclado (`~`, `&`, `|`, `->`, `<->`, `forall`, `exists`).
 - Asignar elementos del dominio a las variables libres detectadas.
 - Obtener verdadero/falso con una justificación desplegable, testigos, contraejemplos, entornos y sustituciones de términos.
@@ -59,11 +61,12 @@ En **Árbol**:
 - Pausar, reiniciar, avanzar, retroceder, arrastrar la línea de tiempo y cambiar velocidad (0,5× a 2×).
 - Saltar a una decisión o a la conclusión desde **Ir a una decisión**. Cada salto pausa la reproducción.
 - Recuperar la cámara automática con **Seguir razonamiento** tras explorar manualmente.
-- Activar **Movimiento reducido** en el árbol; la preferencia del sistema también se respeta.
+- Ocultar la fórmula y la línea de tiempo con el botón del ojo, arriba a la derecha, para dejarle todo el espacio al árbol; el mismo botón las regresa.
 - Ampliar, alejar, desplazar y ajustar el árbol. La cámara sigue la animación y cede ante el movimiento manual.
 - Ver el árbol completo de lo que evaluó el motor, con el testigo o contraejemplo resaltado. El botón `−` del nodo colapsa una rama y `+N` la vuelve a abrir.
 - Seleccionar nodos para destacar su ruta y consultar fórmula, entorno, regla y justificación.
 - Activar el modo inmersivo, que dedica toda la pantalla al árbol.
+- Ver el árbol en **3D** con el botón `3D`, arriba a la derecha: un cono de esferas con la raíz arriba, que gira solo y se rota con el mouse (rueda para acercar). Usa la misma animación, línea de tiempo, inspector y colores que la vista 2D; three.js se descarga solo al abrir esta vista.
 - Usar teclado; se respeta la preferencia de movimiento reducido del sistema.
 
 Cada árbol corresponde a un resultado del motor: toda modificación de fórmula, modelo o asignaciones retira el resultado y su árbol. Los borradores se conservan al cambiar de pestaña y se reinician al recargar. Consulta qué se muestra de cada resultado en [SEMANTICS.md](SEMANTICS.md).

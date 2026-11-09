@@ -1,5 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Expand, Play, Shrink, X, Volume2, VolumeX } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Box,
+  Check,
+  Expand,
+  Eye,
+  EyeOff,
+  GitBranch,
+  Play,
+  Shrink,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 import type { Evidence, Interpretation } from "../../core/types";
 import { compileTimeline, frameAt } from "../../reasoning/playback";
 import {
@@ -13,6 +25,11 @@ import { useReasoningSound } from "../../state/useReasoningSound";
 import { ReasoningCanvas } from "../../visualization/ReasoningCanvas";
 import { Inspector } from "./Inspector";
 import { Timeline } from "./Timeline";
+
+// three.js is only downloaded when the 3D view is first opened.
+const ReasoningScene3D = lazy(
+  () => import("../../visualization/ReasoningScene3D"),
+);
 
 export interface Evaluation {
   id: number;
@@ -38,21 +55,27 @@ export function ReasoningView({
   visible,
   immersive,
   setImmersive,
+  controlsHidden,
+  setControlsHidden,
+  view3d,
+  setView3d,
   playRequest,
 }: {
   evaluation: Evaluation;
   visible: boolean;
   immersive: boolean;
   setImmersive: (value: boolean) => void;
+  controlsHidden: boolean;
+  setControlsHidden: (value: boolean) => void;
+  view3d: boolean;
+  setView3d: (value: boolean) => void;
   playRequest: number;
 }) {
   const [modes, setModes] = useState<BranchModes>({});
   const [selectedId, setSelectedId] = useState("");
   const [inspector, setInspector] = useState(false);
   const [follow, setFollow] = useState(false);
-  const systemReduced = useReducedMotion();
-  const [gentle, setGentle] = useState(false);
-  const reduced = systemReduced || gentle;
+  const reduced = useReducedMotion();
   const tree = useMemo(
     () => buildVisibleTree(evaluation.evidence, modes),
     [evaluation, modes],
@@ -98,73 +121,117 @@ export function ReasoningView({
   const { domain, relations } = evaluation.interpretation;
   return (
     <>
-      <ReasoningCanvas
-        tree={tree}
-        selectedId={shownId}
-        onSelect={select}
-        onToggle={toggle}
-        frame={frame}
-        focus={timeline.steps[frame.step].focus}
-        reduced={reduced}
-        follow={follow}
-        setFollow={setFollow}
-        playing={p.playing}
-        cameraDuration={Math.min(950, (timeline.unit / p.speed) * 0.75)}
-      />
-      <div className="formula-dock glass">
-        <span className="active-formula">
-          <span>{prettyFormula(evaluation.formula)}</span>
-        </span>
-        <button
-          className="evaluate-button"
-          aria-label="Animar razonamiento"
-          onClick={animate}
+      {view3d ? (
+        <Suspense
+          fallback={
+            <div className="reasoning-canvas organic-scene">
+              <div className="canvas-empty">
+                <h2>Cargando la vista 3D…</h2>
+              </div>
+            </div>
+          }
         >
-          <Play size={12} fill="currentColor" />
-          <span>Animar</span>
-        </button>
-        <div
-          className="sound-controls"
-          role="group"
-          aria-label="Sonido del razonamiento"
-        >
+          <ReasoningScene3D
+            tree={tree}
+            frame={frame}
+            selectedId={shownId}
+            onSelect={select}
+            reduced={reduced}
+            visible={visible}
+            clear={controlsHidden}
+          />
+        </Suspense>
+      ) : (
+        <ReasoningCanvas
+          tree={tree}
+          selectedId={shownId}
+          onSelect={select}
+          onToggle={toggle}
+          frame={frame}
+          focus={timeline.steps[frame.step].focus}
+          reduced={reduced}
+          follow={follow}
+          setFollow={setFollow}
+          playing={p.playing}
+          cameraDuration={Math.min(950, (timeline.unit / p.speed) * 0.75)}
+          clear={controlsHidden}
+        />
+      )}
+      {!controlsHidden && (
+        <div className="formula-dock glass">
+          <span className="active-formula">
+            <span>{prettyFormula(evaluation.formula)}</span>
+          </span>
           <button
-            className="sound-toggle"
-            onClick={() => void sound.toggle()}
-            aria-label={
-              sound.unavailable
-                ? "Audio no disponible"
-                : sound.enabled
-                  ? "Silenciar sonido"
-                  : "Activar sonido"
-            }
-            aria-pressed={sound.enabled}
-            disabled={sound.unavailable}
-            title={
-              sound.unavailable
-                ? "Este navegador no pudo iniciar el audio"
-                : sound.enabled
-                  ? "Silenciar sonido"
-                  : "Activar sonido"
-            }
+            className="evaluate-button"
+            aria-label="Animar razonamiento"
+            onClick={animate}
           >
-            {sound.enabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            <Play size={12} fill="currentColor" />
+            <span>Animar</span>
           </button>
-          {sound.enabled && (
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              aria-label="Volumen del sonido"
-              aria-valuetext={`${sound.volume}%`}
-              value={sound.volume}
-              onChange={(event) => sound.setVolume(Number(event.target.value))}
-            />
-          )}
+          <div
+            className="sound-controls"
+            role="group"
+            aria-label="Sonido del razonamiento"
+          >
+            <button
+              className="sound-toggle"
+              onClick={() => void sound.toggle()}
+              aria-label={
+                sound.unavailable
+                  ? "Audio no disponible"
+                  : sound.enabled
+                    ? "Silenciar sonido"
+                    : "Activar sonido"
+              }
+              aria-pressed={sound.enabled}
+              disabled={sound.unavailable}
+              title={
+                sound.unavailable
+                  ? "Este navegador no pudo iniciar el audio"
+                  : sound.enabled
+                    ? "Silenciar sonido"
+                    : "Activar sonido"
+              }
+            >
+              {sound.enabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            </button>
+            {sound.enabled && (
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                aria-label="Volumen del sonido"
+                aria-valuetext={`${sound.volume}%`}
+                value={sound.volume}
+                onChange={(event) => sound.setVolume(Number(event.target.value))}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
       <div className="scene-actions">
+        <button
+          className="glass view-3d-toggle"
+          aria-label={view3d ? "Vista 2D" : "Vista 3D"}
+          title={view3d ? "Volver a la vista 2D" : "Ver el árbol en 3D"}
+          aria-pressed={view3d}
+          onClick={() => setView3d(!view3d)}
+        >
+          {view3d ? <GitBranch size={16} /> : <Box size={16} />}
+          <span>{view3d ? "2D" : "3D"}</span>
+        </button>
+        <button
+          className="glass"
+          aria-label={controlsHidden ? "Mostrar controles" : "Ocultar controles"}
+          title={controlsHidden ? "Mostrar controles" : "Ocultar controles"}
+          aria-pressed={controlsHidden}
+          onClick={() => setControlsHidden(!controlsHidden)}
+        >
+          {controlsHidden ? <Eye size={17} /> : <EyeOff size={17} />}
+        </button>
         <button
           className="glass"
           aria-label={immersive ? "Salir del modo inmersivo" : "Modo inmersivo"}
@@ -247,15 +314,14 @@ export function ReasoningView({
           </small>
         </div>
       </div>
-      <Timeline
-        playback={p}
-        timeline={timeline}
-        follow={follow}
-        onFollow={() => setFollow((current) => !current)}
-        reduced={reduced}
-        systemReduced={systemReduced}
-        onReduced={() => setGentle((current) => !current)}
-      />
+      {!controlsHidden && (
+        <Timeline
+          playback={p}
+          timeline={timeline}
+          follow={follow}
+          onFollow={() => setFollow((current) => !current)}
+        />
+      )}
     </>
   );
 }
