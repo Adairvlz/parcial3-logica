@@ -235,3 +235,35 @@ export function diagnosticLocation(path?: string) {
   if (assignment) return `Asignación de ${assignment[1]}`;
   return path;
 }
+
+/** The declared symbols alone; validity is checked by core. */
+export function languageOfDraft(draft: ModelDraft): LogicalLanguage {
+  const declare = (category: SymbolDraft["category"]) =>
+    draft.symbols
+      .filter((s) => s.category === category)
+      .map((s) => ({
+        name: s.name.trim(),
+        arity: /^\d+$/.test(s.arity.trim()) ? Number(s.arity) : NaN,
+      }));
+  return { functions: declare("function"), predicates: declare("predicate") };
+}
+
+/** Writes an interpretation into the editor, keeping each symbol's card. */
+export function draftFromInterpretation(
+  draft: ModelDraft,
+  interpretation: Interpretation,
+): ModelDraft {
+  return {
+    domain: interpretation.domain.join(", "),
+    symbols: draft.symbols.map((symbol) => {
+      const name = symbol.name.trim();
+      const table =
+        symbol.category === "predicate"
+          ? (interpretation.relations[name] ?? []).map(tupleText).join("\n")
+          : (interpretation.functions[name] ?? [])
+              .map((row) => `${tupleText(row.inputs)} -> ${row.output}`)
+              .join("\n");
+      return { ...symbol, table };
+    }),
+  };
+}

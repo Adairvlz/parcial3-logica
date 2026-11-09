@@ -11,6 +11,7 @@ export function App() {
   const ws = useWorkspace();
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [immersive, setImmersive] = useState(false);
+  const [controlsHidden, setControlsHidden] = useState(false);
   const [playRequest, setPlayRequest] = useState(0);
   // Immersive mode hides the tabs, so it only makes sense with a result on screen.
   const fullscreen = immersive && !!evaluation && ws.page === "laboratory";
@@ -66,6 +67,8 @@ export function App() {
               visible={ws.page === "laboratory"}
               immersive={immersive}
               setImmersive={setImmersive}
+              controlsHidden={controlsHidden}
+              setControlsHidden={setControlsHidden}
               playRequest={playRequest}
             />
           ) : (

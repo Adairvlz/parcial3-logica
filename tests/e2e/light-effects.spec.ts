@@ -25,9 +25,7 @@ test("contact rings, directional trails and closing wave seek and pause together
   await scrubber.fill("1900");
   await expect(page.locator(".closing-wave")).toHaveCount(0);
   await expect(page.locator(".result-beacon")).not.toContainText("Verdadero");
-  await page
-    .getByRole("button", { name: "Movimiento reducido", exact: true })
-    .click();
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(
     page.locator(
       ".pulse-trail, .contact-resonance, .closing-wave, .finale-resonance",

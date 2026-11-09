@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Expand, Play, Shrink, X, Volume2, VolumeX } from "lucide-react";
+import {
+  Check,
+  Expand,
+  Eye,
+  EyeOff,
+  Play,
+  Shrink,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 import type { Evidence, Interpretation } from "../../core/types";
 import { compileTimeline, frameAt } from "../../reasoning/playback";
 import {
@@ -38,21 +48,23 @@ export function ReasoningView({
   visible,
   immersive,
   setImmersive,
+  controlsHidden,
+  setControlsHidden,
   playRequest,
 }: {
   evaluation: Evaluation;
   visible: boolean;
   immersive: boolean;
   setImmersive: (value: boolean) => void;
+  controlsHidden: boolean;
+  setControlsHidden: (value: boolean) => void;
   playRequest: number;
 }) {
   const [modes, setModes] = useState<BranchModes>({});
   const [selectedId, setSelectedId] = useState("");
   const [inspector, setInspector] = useState(false);
   const [follow, setFollow] = useState(false);
-  const systemReduced = useReducedMotion();
-  const [gentle, setGentle] = useState(false);
-  const reduced = systemReduced || gentle;
+  const reduced = useReducedMotion();
   const tree = useMemo(
     () => buildVisibleTree(evaluation.evidence, modes),
     [evaluation, modes],
@@ -110,61 +122,73 @@ export function ReasoningView({
         setFollow={setFollow}
         playing={p.playing}
         cameraDuration={Math.min(950, (timeline.unit / p.speed) * 0.75)}
+        clear={controlsHidden}
       />
-      <div className="formula-dock glass">
-        <span className="active-formula">
-          <span>{prettyFormula(evaluation.formula)}</span>
-        </span>
-        <button
-          className="evaluate-button"
-          aria-label="Animar razonamiento"
-          onClick={animate}
-        >
-          <Play size={12} fill="currentColor" />
-          <span>Animar</span>
-        </button>
-        <div
-          className="sound-controls"
-          role="group"
-          aria-label="Sonido del razonamiento"
-        >
+      {!controlsHidden && (
+        <div className="formula-dock glass">
+          <span className="active-formula">
+            <span>{prettyFormula(evaluation.formula)}</span>
+          </span>
           <button
-            className="sound-toggle"
-            onClick={() => void sound.toggle()}
-            aria-label={
-              sound.unavailable
-                ? "Audio no disponible"
-                : sound.enabled
-                  ? "Silenciar sonido"
-                  : "Activar sonido"
-            }
-            aria-pressed={sound.enabled}
-            disabled={sound.unavailable}
-            title={
-              sound.unavailable
-                ? "Este navegador no pudo iniciar el audio"
-                : sound.enabled
-                  ? "Silenciar sonido"
-                  : "Activar sonido"
-            }
+            className="evaluate-button"
+            aria-label="Animar razonamiento"
+            onClick={animate}
           >
-            {sound.enabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            <Play size={12} fill="currentColor" />
+            <span>Animar</span>
           </button>
-          {sound.enabled && (
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              aria-label="Volumen del sonido"
-              aria-valuetext={`${sound.volume}%`}
-              value={sound.volume}
-              onChange={(event) => sound.setVolume(Number(event.target.value))}
-            />
-          )}
+          <div
+            className="sound-controls"
+            role="group"
+            aria-label="Sonido del razonamiento"
+          >
+            <button
+              className="sound-toggle"
+              onClick={() => void sound.toggle()}
+              aria-label={
+                sound.unavailable
+                  ? "Audio no disponible"
+                  : sound.enabled
+                    ? "Silenciar sonido"
+                    : "Activar sonido"
+              }
+              aria-pressed={sound.enabled}
+              disabled={sound.unavailable}
+              title={
+                sound.unavailable
+                  ? "Este navegador no pudo iniciar el audio"
+                  : sound.enabled
+                    ? "Silenciar sonido"
+                    : "Activar sonido"
+              }
+            >
+              {sound.enabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            </button>
+            {sound.enabled && (
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                aria-label="Volumen del sonido"
+                aria-valuetext={`${sound.volume}%`}
+                value={sound.volume}
+                onChange={(event) => sound.setVolume(Number(event.target.value))}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
       <div className="scene-actions">
+        <button
+          className="glass"
+          aria-label={controlsHidden ? "Mostrar controles" : "Ocultar controles"}
+          title={controlsHidden ? "Mostrar controles" : "Ocultar controles"}
+          aria-pressed={controlsHidden}
+          onClick={() => setControlsHidden(!controlsHidden)}
+        >
+          {controlsHidden ? <Eye size={17} /> : <EyeOff size={17} />}
+        </button>
         <button
           className="glass"
           aria-label={immersive ? "Salir del modo inmersivo" : "Modo inmersivo"}
@@ -247,15 +271,14 @@ export function ReasoningView({
           </small>
         </div>
       </div>
-      <Timeline
-        playback={p}
-        timeline={timeline}
-        follow={follow}
-        onFollow={() => setFollow((current) => !current)}
-        reduced={reduced}
-        systemReduced={systemReduced}
-        onReduced={() => setGentle((current) => !current)}
-      />
+      {!controlsHidden && (
+        <Timeline
+          playback={p}
+          timeline={timeline}
+          follow={follow}
+          onFollow={() => setFollow((current) => !current)}
+        />
+      )}
     </>
   );
 }

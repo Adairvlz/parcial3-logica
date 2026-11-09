@@ -345,6 +345,7 @@ const edgeTypes = { luminous: LuminousEdge };
 
 interface CameraProps {
   cameraDuration: number;
+  clear: boolean;
   points: Record<string, Point>;
   focus: readonly string[];
   follow: boolean;
@@ -355,6 +356,7 @@ interface CameraProps {
 }
 function Camera({
   cameraDuration,
+  clear,
   points,
   focus,
   follow,
@@ -411,8 +413,9 @@ function Camera({
         right = Math.max(...visible.map((p) => p.x)) + 110;
       const top = Math.min(...visible.map((p) => p.y)) - 85,
         bottom = Math.max(...visible.map((p) => p.y)) + 125;
-      const topSpace = width < 600 ? 150 : 110;
-      const bottomSpace = width < 600 ? 240 : 215;
+      // With the docks hidden the tree may use the space they covered.
+      const topSpace = clear ? 40 : width < 600 ? 150 : 110;
+      const bottomSpace = clear ? 40 : width < 600 ? 240 : 215;
       const usableHeight = Math.max(180, height - topSpace - bottomSpace);
       const targetZoom = Math.min(
         1.18,
@@ -429,7 +432,7 @@ function Camera({
         manual,
       );
     },
-    [points, width, height, animate],
+    [points, width, height, animate, clear],
   );
   useEffect(() => {
     // A resize jumps into place; opening a branch glides to the new shape.
@@ -501,6 +504,8 @@ function Camera({
 
 export interface CanvasProps {
   cameraDuration: number;
+  /** The formula dock and timeline are hidden. */
+  clear?: boolean;
   tree: VisibleTree;
   selectedId: string;
   onSelect: (id: string) => void;
@@ -521,6 +526,7 @@ export function ReasoningCanvas(props: CanvasProps) {
 }
 function OrganicScene({
   cameraDuration,
+  clear = false,
   tree,
   selectedId,
   onSelect,
@@ -673,6 +679,7 @@ function OrganicScene({
       >
         <Camera
           cameraDuration={cameraDuration}
+          clear={clear}
           points={points}
           focus={focus}
           follow={follow}

@@ -21,12 +21,16 @@ import type { Evaluation } from "../laboratory/ReasoningView";
 import {
   diagnosticLocation,
   domainElements,
+  draftFromInterpretation,
   EXAMPLE_FORMULA,
   initialModel,
+  languageOfDraft,
   readModelDraft,
   type ModelDraft,
 } from "./modelEditor";
 import { InterpretationEditor } from "./InterpretationEditor";
+import { ModelSearch } from "./ModelSearch";
+import { CLASS_EXAMPLES, type ClassExample } from "./examples";
 import "./semantic.css";
 
 interface SavedState {
@@ -106,14 +110,36 @@ export function SemanticWorkspace({
     return () => cancelAnimationFrame(animation);
   }, [outcome]);
   const invalidate = () => setResult(null);
+  // Names the class example on screen until the model or the formula changes.
+  const [example, setExample] = useState<ClassExample | null>(null);
   const updateModel = (model: ModelDraft) => {
     setState({ model, assignment: {}, variables: [] });
+    setExample(null);
     invalidate();
   };
   const updateFormula = (text: string) => {
     onChange(text);
     setState((s) => ({ ...s, variables: [], assignment: {} }));
+    setExample(null);
     invalidate();
+  };
+  /** Replaces model, formula and environment at once, and evaluates them. */
+  const load = (
+    model: ModelDraft,
+    text: string,
+    assignment: Record<string, string> = {},
+  ) => {
+    nextId.current = Math.max(nextId.current, ...model.symbols.map((s) => s.id + 1));
+    onChange(text);
+    setState({ model, assignment, variables: Object.keys(assignment) });
+    scrollToResult.current = true;
+    setResult(evaluateDraft(model, text, assignment));
+  };
+  const loadExample = (id: string) => {
+    const chosen = CLASS_EXAMPLES.find((e) => e.id === id);
+    if (!chosen) return;
+    load(structuredClone(chosen.model), chosen.formula, chosen.assignment);
+    setExample(chosen);
   };
   const reset = () => {
     onChange(EXAMPLE_FORMULA);
@@ -122,6 +148,7 @@ export function SemanticWorkspace({
       assignment: {},
       variables: [],
     });
+    setExample(null);
     invalidate();
   };
   const run = () => {
@@ -166,7 +193,27 @@ export function SemanticWorkspace({
             <div className="semantic-card-title">
               <span>01</span>
               <h2>Lenguaje e interpretación</h2>
+              <select
+                className="example-picker"
+                aria-label="Cargar ejemplo de clase"
+                value=""
+                onChange={(e) => loadExample(e.target.value)}
+              >
+                <option value="" disabled>
+                  Cargar ejemplo de clase…
+                </option>
+                {CLASS_EXAMPLES.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.source} · {e.title}
+                  </option>
+                ))}
+              </select>
             </div>
+            {example && (
+              <p className="example-note">
+                <strong>{example.source}.</strong> {example.description}
+              </p>
+            )}
             <label className="domain-editor">
               Dominio finito
               <input
@@ -443,6 +490,18 @@ export function SemanticWorkspace({
               </>
             )}
           </div>
+          <ModelSearch
+            formula={formula}
+            language={languageOfDraft(state.model)}
+            resetKey={`${formula}\u0000${JSON.stringify(languageOfDraft(state.model))}`}
+            onLoad={(found) =>
+              load(
+                draftFromInterpretation(state.model, found.interpretation),
+                formula,
+                { ...found.assignment },
+              )
+            }
+          />
         </aside>
       </div>
     </section>

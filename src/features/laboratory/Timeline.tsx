@@ -11,17 +11,11 @@ export function Timeline({
   timeline,
   follow,
   onFollow,
-  reduced,
-  systemReduced,
-  onReduced,
 }: {
   playback: Playback;
   timeline: TimelineData;
   follow: boolean;
   onFollow: () => void;
-  reduced: boolean;
-  systemReduced: boolean;
-  onReduced: () => void;
 }) {
   const current = timeline.steps[p.step];
   return (
@@ -36,18 +30,6 @@ export function Timeline({
       <div className="cinematic-tools">
         <button aria-pressed={follow} onClick={onFollow}>
           Seguir razonamiento
-        </button>
-        <button
-          aria-pressed={reduced}
-          disabled={systemReduced}
-          onClick={onReduced}
-          title={
-            systemReduced
-              ? "Activado por la preferencia del sistema"
-              : "Reducir movimiento"
-          }
-        >
-          Movimiento reducido
         </button>
         <select
           aria-label="Ir a una decisión"

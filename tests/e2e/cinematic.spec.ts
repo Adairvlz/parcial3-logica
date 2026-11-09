@@ -43,9 +43,7 @@ test("decision navigation, camera recovery and reduced motion preserve the repla
   await expect(follow).toHaveAttribute("aria-pressed", "false");
   await follow.click();
   await expect(follow).toHaveAttribute("aria-pressed", "true");
-  await page
-    .getByRole("button", { name: "Movimiento reducido", exact: true })
-    .click();
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(page.locator(".reasoning-canvas")).toHaveClass(/motion-reduced/);
   await expect(page.locator(".edge-pulse")).toHaveCount(0);
   await decisions.selectOption({ label: "Conclusión" });
@@ -74,4 +72,34 @@ test("edges reveal truth colors only after evaluation and rewind to neutral", as
   await expect(stop).toHaveAttribute("stop-color", "#fb7185");
   await slider.fill("3100");
   await expect(stop).toHaveAttribute("stop-color", "#69bfe8");
+});
+
+test("the docks hide to give the tree the whole canvas and come back", async ({
+  page,
+}) => {
+  await page.goto("/#/laboratory");
+  await expect(
+    page.getByRole("button", { name: "Movimiento reducido" }),
+  ).toHaveCount(0);
+  const viewport = page.locator(".react-flow__viewport");
+  await page.waitForTimeout(400);
+  const before = await viewport.getAttribute("style");
+  await page.getByRole("button", { name: "Ocultar controles" }).click();
+  await expect(page.locator(".formula-dock")).toHaveCount(0);
+  await expect(page.locator(".timeline")).toHaveCount(0);
+  // The camera reframes the tree into the freed space.
+  await expect.poll(() => viewport.getAttribute("style")).not.toBe(before);
+  await expect(page.locator(".spatial-controls")).toBeVisible();
+  await page.getByRole("button", { name: "Mostrar controles" }).click();
+  await expect(page.locator(".formula-dock")).toBeVisible();
+  await expect(page.locator(".timeline")).toBeVisible();
+  // The choice survives a new evaluation.
+  await page.getByRole("button", { name: "Ocultar controles" }).click();
+  await page.getByRole("link", { name: "Evaluador", exact: true }).click();
+  await page.getByRole("button", { name: "Evaluar fórmula" }).click();
+  await page.getByRole("link", { name: "Árbol", exact: true }).click();
+  await expect(page.locator(".timeline")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Mostrar controles" }),
+  ).toBeVisible();
 });

@@ -291,3 +291,48 @@ test("the decision menu names the node and case of each decision", async ({
   await expect(options.nth(1)).toHaveText(/∃y P\(x,y\), x = a/);
   await expect(options.last()).toHaveText("Conclusión");
 });
+
+test("class examples load in one click and the search finds a counterexample", async ({
+  page,
+}) => {
+  await page.goto("/#/evaluate");
+  await page
+    .getByRole("combobox", { name: "Cargar ejemplo de clase" })
+    .selectOption({ label: "Entornos, p. 13 · No es implicación semántica" });
+  await expect(formula(page)).toHaveValue(
+    "(∀x P(x) → ∀x Q(x)) → ∀x (P(x) → Q(x))",
+  );
+  await expect(page.locator(".example-note")).toContainText("Entornos, p. 13");
+  await expect(page.locator(".engine-truth")).toContainText("Falso");
+  await formula(page).fill("∀x P(x) → ∀x Q(x)");
+  await expect(page.locator(".example-note")).toHaveCount(0);
+  await page.getByRole("button", { name: /Buscar contraejemplo/ }).click();
+  await expect(page.locator(".search-found")).toContainText(
+    "Contraejemplo encontrado",
+  );
+  await page.getByRole("button", { name: "Cargar en el editor y evaluar" }).click();
+  await expect(page.locator(".engine-truth")).toContainText("Falso");
+  // Same formula and language: the search result still applies and stays.
+  await expect(page.locator(".search-found")).toBeVisible();
+});
+
+test("a valid formula has no counterexample, with the undecidability caveat", async ({
+  page,
+}) => {
+  await page.goto("/#/evaluate");
+  await page
+    .getByRole("combobox", { name: "Cargar ejemplo de clase" })
+    .selectOption({ label: "Entornos, p. 17 · Una fórmula válida" });
+  await expect(page.locator(".engine-truth")).toContainText("Verdadero");
+  await page.getByRole("button", { name: /Buscar contraejemplo/ }).click();
+  await expect(page.locator(".search-miss")).toContainText(
+    "Sin contraejemplo con hasta 3 elementos",
+  );
+  await expect(page.locator(".search-note")).toContainText("Church–Turing");
+  await page
+    .getByRole("combobox", { name: "Cargar ejemplo de clase" })
+    .selectOption({ label: "Entornos, p. 6 · Fórmula abierta con función" });
+  await expect(page.getByRole("combobox", { name: "Asignación de x" })).toHaveValue("a");
+  await expect(page.locator(".engine-truth")).toContainText("Verdadero");
+});
+
