@@ -1817,3 +1817,77 @@ code {
 .orb-kind {
   font-size: calc(var(--label-size) * 0.5);
 }
+.scene-3d {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 28%, #1a2346 0%, #0b1226 38%, #050912 75%);
+}
+.scene-3d-host {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+.scene-3d-host:active {
+  cursor: grabbing;
+}
+.scene-3d-host canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+.scene-3d-controls {
+  position: absolute;
+  right: 27px;
+  bottom: 60px;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 6px 6px 12px;
+  border-radius: 8px;
+}
+.scene-3d-controls > span {
+  margin-right: 6px;
+  font-size: 10px;
+  color: #8ba0b9;
+}
+.scene-3d-controls button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #b9cce1;
+}
+.scene-3d-controls button:hover:not(:disabled) {
+  background: #1d2c40;
+}
+.scene-3d-controls button[aria-pressed="true"] {
+  color: #99efd2;
+}
+.scene-actions > button.view-3d-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: auto;
+  padding: 0 10px;
+  font: 600 11px var(--mono);
+  color: #c4b5fd;
+}
+.scene-actions > button.view-3d-toggle[aria-pressed="true"] {
+  color: #99efd2;
+}
+.scene-3d-failure {
+  z-index: 8;
+  max-width: 520px;
+  margin: auto;
+}
+.scene-3d-failure code {
+  display: block;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #8ba0b9;
+  overflow-wrap: anywhere;
+}

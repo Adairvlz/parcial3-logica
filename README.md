@@ -66,6 +66,7 @@ En **Árbol**:
 - Ver el árbol completo de lo que evaluó el motor, con el testigo o contraejemplo resaltado. El botón `−` del nodo colapsa una rama y `+N` la vuelve a abrir.
 - Seleccionar nodos para destacar su ruta y consultar fórmula, entorno, regla y justificación.
 - Activar el modo inmersivo, que dedica toda la pantalla al árbol.
+- Ver el árbol en **3D** con el botón `3D`, arriba a la derecha: un cono de esferas con la raíz arriba, que gira solo y se rota con el mouse (rueda para acercar). Usa la misma animación, línea de tiempo, inspector y colores que la vista 2D; three.js se descarga solo al abrir esta vista.
 - Usar teclado; se respeta la preferencia de movimiento reducido del sistema.
 
 Cada árbol corresponde a un resultado del motor: toda modificación de fórmula, modelo o asignaciones retira el resultado y su árbol. Los borradores se conservan al cambiar de pestaña y se reinician al recargar. Consulta qué se muestra de cada resultado en [SEMANTICS.md](SEMANTICS.md).

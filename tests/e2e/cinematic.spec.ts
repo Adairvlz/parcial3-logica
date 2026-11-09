@@ -103,3 +103,30 @@ test("the docks hide to give the tree the whole canvas and come back", async ({
     page.getByRole("button", { name: "Mostrar controles" }),
   ).toBeVisible();
 });
+
+test("the 3D view renders the same reasoning and switches back to 2D", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/#/laboratory");
+  await page.getByRole("button", { name: "Vista 3D" }).click();
+  const scene = page.getByTestId("reasoning-scene-3d");
+  await expect(scene.locator("canvas")).toBeVisible();
+  await expect(page.locator(".react-flow")).toHaveCount(0);
+  // The timeline, result and controls keep working over the 3D scene.
+  await expect(page.locator(".result-beacon")).toContainText("Verdadero");
+  await page.getByRole("button", { name: "Animar razonamiento" }).click();
+  await expect(page.locator(".timeline")).toHaveAttribute("data-playing", "true");
+  await page.getByRole("button", { name: "Pausar", exact: true }).click();
+  await page.getByRole("button", { name: "Ajustar vista 3D" }).click();
+  await page.getByRole("button", { name: "Detener giro" }).click();
+  await expect(
+    page.getByRole("button", { name: "Girar automáticamente" }),
+  ).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: "Vista 2D" }).click();
+  await expect(page.locator(".orb-core")).toHaveCount(10);
+  await expect(scene).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+

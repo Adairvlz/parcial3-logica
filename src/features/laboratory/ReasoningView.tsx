@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Box,
   Check,
   Expand,
   Eye,
   EyeOff,
+  GitBranch,
   Play,
   Shrink,
   Volume2,
@@ -23,6 +25,11 @@ import { useReasoningSound } from "../../state/useReasoningSound";
 import { ReasoningCanvas } from "../../visualization/ReasoningCanvas";
 import { Inspector } from "./Inspector";
 import { Timeline } from "./Timeline";
+
+// three.js is only downloaded when the 3D view is first opened.
+const ReasoningScene3D = lazy(
+  () => import("../../visualization/ReasoningScene3D"),
+);
 
 export interface Evaluation {
   id: number;
@@ -50,6 +57,8 @@ export function ReasoningView({
   setImmersive,
   controlsHidden,
   setControlsHidden,
+  view3d,
+  setView3d,
   playRequest,
 }: {
   evaluation: Evaluation;
@@ -58,6 +67,8 @@ export function ReasoningView({
   setImmersive: (value: boolean) => void;
   controlsHidden: boolean;
   setControlsHidden: (value: boolean) => void;
+  view3d: boolean;
+  setView3d: (value: boolean) => void;
   playRequest: number;
 }) {
   const [modes, setModes] = useState<BranchModes>({});
@@ -110,20 +121,42 @@ export function ReasoningView({
   const { domain, relations } = evaluation.interpretation;
   return (
     <>
-      <ReasoningCanvas
-        tree={tree}
-        selectedId={shownId}
-        onSelect={select}
-        onToggle={toggle}
-        frame={frame}
-        focus={timeline.steps[frame.step].focus}
-        reduced={reduced}
-        follow={follow}
-        setFollow={setFollow}
-        playing={p.playing}
-        cameraDuration={Math.min(950, (timeline.unit / p.speed) * 0.75)}
-        clear={controlsHidden}
-      />
+      {view3d ? (
+        <Suspense
+          fallback={
+            <div className="reasoning-canvas organic-scene">
+              <div className="canvas-empty">
+                <h2>Cargando la vista 3D…</h2>
+              </div>
+            </div>
+          }
+        >
+          <ReasoningScene3D
+            tree={tree}
+            frame={frame}
+            selectedId={shownId}
+            onSelect={select}
+            reduced={reduced}
+            visible={visible}
+            clear={controlsHidden}
+          />
+        </Suspense>
+      ) : (
+        <ReasoningCanvas
+          tree={tree}
+          selectedId={shownId}
+          onSelect={select}
+          onToggle={toggle}
+          frame={frame}
+          focus={timeline.steps[frame.step].focus}
+          reduced={reduced}
+          follow={follow}
+          setFollow={setFollow}
+          playing={p.playing}
+          cameraDuration={Math.min(950, (timeline.unit / p.speed) * 0.75)}
+          clear={controlsHidden}
+        />
+      )}
       {!controlsHidden && (
         <div className="formula-dock glass">
           <span className="active-formula">
@@ -180,6 +213,16 @@ export function ReasoningView({
         </div>
       )}
       <div className="scene-actions">
+        <button
+          className="glass view-3d-toggle"
+          aria-label={view3d ? "Vista 2D" : "Vista 3D"}
+          title={view3d ? "Volver a la vista 2D" : "Ver el árbol en 3D"}
+          aria-pressed={view3d}
+          onClick={() => setView3d(!view3d)}
+        >
+          {view3d ? <GitBranch size={16} /> : <Box size={16} />}
+          <span>{view3d ? "2D" : "3D"}</span>
+        </button>
         <button
           className="glass"
           aria-label={controlsHidden ? "Mostrar controles" : "Ocultar controles"}
